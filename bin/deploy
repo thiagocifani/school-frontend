@@ -12,6 +12,11 @@ if [ ! -f "package.json" ]; then
     exit 1
 fi
 
+# Clean up any problematic directories
+echo "🧹 Cleaning up build artifacts..."
+rm -rf .next/
+rm -rf node_modules/.cache/
+
 # Check if Heroku CLI is installed
 if ! command -v heroku &> /dev/null; then
     echo "❌ Error: Heroku CLI is not installed."
