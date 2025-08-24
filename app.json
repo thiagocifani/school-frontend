@@ -1,0 +1,32 @@
+{
+  "name": "School System Frontend",
+  "description": "Next.js frontend for School Management System",
+  "keywords": ["nextjs", "react", "frontend", "school", "management"],
+  "website": "https://github.com/your-username/school-system",
+  "repository": "https://github.com/your-username/school-system",
+  "logo": "https://your-logo-url.com/logo.png",
+  "success_url": "/",
+  "env": {
+    "NODE_ENV": {
+      "value": "production"
+    },
+    "NEXT_PUBLIC_API_URL": {
+      "description": "API URL for the backend service",
+      "value": "https://your-api-app.herokuapp.com/api/v1"
+    },
+    "NPM_CONFIG_PRODUCTION": {
+      "value": "false"
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ]
+}

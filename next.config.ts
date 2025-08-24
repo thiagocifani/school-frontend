@@ -5,6 +5,8 @@ const nextConfig: NextConfig = {
     // Improve HMR stability
     optimizePackageImports: ['lucide-react', 'recharts'],
   },
+  // Configure for production deployment
+  output: 'standalone',
   // Reduce memory usage and improve performance
   webpack: (config, { dev }) => {
     if (dev) {
@@ -15,6 +17,10 @@ const nextConfig: NextConfig = {
       };
     }
     return config;
+  },
+  // Environment variables
+  env: {
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1',
   },
 };
 

@@ -217,6 +217,9 @@ export function StudentForm({
   });
 
   const handleFormSubmit = (data: StudentFormData) => {
+    console.log("🐛 DEBUG - Dados do formulário antes da formatação:", data);
+    console.log("🐛 DEBUG - schoolClassId value:", data.schoolClassId, typeof data.schoolClassId);
+    
     // Transformar os dados para o formato esperado pelo backend (snake_case)
     const formattedData = {
       ...data,
@@ -268,6 +271,9 @@ export function StudentForm({
     delete (formattedData as any).schoolClassId;
     delete (formattedData as any).registrationNumber;
     
+    console.log("🐛 DEBUG - Dados formatados para envio:", formattedData);
+    console.log("🐛 DEBUG - school_class_id final:", formattedData.school_class_id);
+    
     onSubmit(formattedData);
   };
 
@@ -279,12 +285,14 @@ export function StudentForm({
   // Load school classes on mount
   useEffect(() => {
     const loadSchoolClasses = async () => {
+      console.log('🔍 Loading school classes...');
       setLoadingClasses(true);
       try {
         const { data } = await classApi.getAll();
+        console.log('🔍 School classes loaded:', data);
         setSchoolClasses(data);
       } catch (error) {
-        console.error('Error loading school classes:', error);
+        console.error('❌ Error loading school classes:', error);
       } finally {
         setLoadingClasses(false);
       }
@@ -334,10 +342,16 @@ export function StudentForm({
       }
 
       // Reset todos os valores do form
+      console.log("🔍 Setting form values - student school class:", {
+        schoolClass: student.schoolClass,
+        schoolClassId: student.schoolClass?.id,
+        schoolClassIdType: typeof student.schoolClass?.id
+      });
       setValue("name", student.name || "");
       setValue("birthDate", student.birth_date || student.birthDate || "");
       setValue("registrationNumber", student.registration_number || student.registrationNumber || "");
       setValue("status", student.status || "active");
+      console.log("🔍 Setting schoolClassId to:", student.schoolClass?.id || null);
       setValue("schoolClassId", student.schoolClass?.id || null);
       setValue("cpf", student.cpf || "");
       setValue("gender", student.gender || "male");
@@ -436,6 +450,18 @@ export function StudentForm({
       });
     }
   }, [errors, isValid, guardianFields.length, student]);
+
+  // Debug: Log school class selection changes
+  const schoolClassIdValue = watch('schoolClassId');
+  useEffect(() => {
+    console.log('🔍 School Class Selection Changed:', {
+      schoolClassIdValue,
+      type: typeof schoolClassIdValue,
+      schoolClassesCount: schoolClasses.length,
+      selectedClass: schoolClasses.find(sc => sc.id === schoolClassIdValue),
+      formMode: student ? 'edit' : 'create'
+    });
+  }, [schoolClassIdValue, schoolClasses.length, student]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

@@ -47,8 +47,14 @@ export const authApi = {
 export const studentApi = {
   getAll: (params?: any) => api.get<Student[]>('/students', { params }),
   getById: (id: number) => api.get<Student>(`/students/${id}`),
-  create: (data: Partial<Student>) => api.post<Student>('/students', { student: data }),
-  update: (id: number, data: Partial<Student>) => api.put<Student>(`/students/${id}`, { student: data }),
+  create: (data: Partial<Student>) => {
+    console.log("🐛 DEBUG - studentApi.create payload:", { student: data });
+    return api.post<Student>('/students', { student: data });
+  },
+  update: (id: number, data: Partial<Student>) => {
+    console.log("🐛 DEBUG - studentApi.update payload para ID", id, ":", { student: data });
+    return api.put<Student>(`/students/${id}`, { student: data });
+  },
   delete: (id: number) => api.delete(`/students/${id}`),
   getReport: (id: number, termId: number) => 
     api.get(`/students/${id}/report?term_id=${termId}`),
