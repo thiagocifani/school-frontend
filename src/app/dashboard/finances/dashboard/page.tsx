@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { ResponsiveCard, ResponsiveCardContent, ResponsiveCardHeader, ResponsiveCardTitle } from '@/components/ui/responsive-card';
+import { ResponsiveButton, ResponsiveButtonGroup } from '@/components/ui/responsive-button';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { 
@@ -92,10 +92,10 @@ export default function FinancialDashboard() {
 
   if (loading) {
     return (
-      <div className="container mx-auto py-6">
+      <div className="space-y-6">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-gray-200 rounded w-1/3"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="h-32 bg-gray-200 rounded"></div>
             ))}
@@ -106,80 +106,83 @@ export default function FinancialDashboard() {
   }
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Dashboard Financeiro</h1>
-        <div className="flex gap-2">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
+        <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--foreground)' }}>
+          Dashboard Financeiro
+        </h1>
+        <ResponsiveButtonGroup>
           <Link href="/dashboard/finances/tuitions">
-            <Button variant="outline">Mensalidades</Button>
+            <ResponsiveButton variant="outline">Mensalidades</ResponsiveButton>
           </Link>
           <Link href="/dashboard/finances/salaries">
-            <Button variant="outline">Salários</Button>
+            <ResponsiveButton variant="outline">Salários</ResponsiveButton>
           </Link>
-        </div>
+        </ResponsiveButtonGroup>
       </div>
 
       {/* Cards de Resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <ResponsiveCard>
+          <ResponsiveCardHeader className="pb-2">
+            <ResponsiveCardTitle className="text-sm font-medium flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
               Receitas do Mês
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </ResponsiveCardTitle>
+          </ResponsiveCardHeader>
+          <ResponsiveCardContent>
             <div className="text-2xl font-bold text-green-600">
               R$ {data.monthlyRevenue.toLocaleString('pt-BR')}
             </div>
-            <p className="text-xs text-gray-500">Mensalidades recebidas</p>
-          </CardContent>
-        </Card>
+            <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Mensalidades recebidas</p>
+          </ResponsiveCardContent>
+        </ResponsiveCard>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
+        <ResponsiveCard>
+          <ResponsiveCardHeader className="pb-2">
+            <ResponsiveCardTitle className="text-sm font-medium flex items-center gap-2">
               <Users className="h-4 w-4" />
               Despesas do Mês
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </ResponsiveCardTitle>
+          </ResponsiveCardHeader>
+          <ResponsiveCardContent>
             <div className="text-2xl font-bold text-red-600">
               R$ {data.monthlyExpenses.toLocaleString('pt-BR')}
             </div>
-            <p className="text-xs text-gray-500">Salários e custos</p>
-          </CardContent>
-        </Card>
+            <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Salários e custos</p>
+          </ResponsiveCardContent>
+        </ResponsiveCard>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
+        <ResponsiveCard>
+          <ResponsiveCardHeader className="pb-2">
+            <ResponsiveCardTitle className="text-sm font-medium flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               Mensalidades Pendentes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </ResponsiveCardTitle>
+          </ResponsiveCardHeader>
+          <ResponsiveCardContent>
             <div className="text-2xl font-bold text-yellow-600">
               R$ {data.pendingTuitions.toLocaleString('pt-BR')}
             </div>
-            <p className="text-xs text-gray-500">A receber</p>
-          </CardContent>
-        </Card>
+            <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>A receber</p>
+          </ResponsiveCardContent>
+        </ResponsiveCard>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
+        <ResponsiveCard>
+          <ResponsiveCardHeader className="pb-2">
+            <ResponsiveCardTitle className="text-sm font-medium flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
               Saldo do Mês
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </ResponsiveCardTitle>
+          </ResponsiveCardHeader>
+          <ResponsiveCardContent>
             <div className={`text-2xl font-bold ${(data.monthlyRevenue - data.monthlyExpenses) >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
               R$ {(data.monthlyRevenue - data.monthlyExpenses).toLocaleString('pt-BR')}
             </div>
-            <p className="text-xs text-gray-500">Receitas - Despesas</p>
-          </CardContent>
-        </Card>
+            <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Receitas - Despesas</p>
+          </ResponsiveCardContent>
+        </ResponsiveCard>
       </div>
 
       {/* Ações Rápidas */}

@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { ResponsiveCard, ResponsiveCardContent, ResponsiveCardHeader, ResponsiveCardTitle } from '@/components/ui/responsive-card';
+import { ResponsiveButton, ResponsiveButtonGroup } from '@/components/ui/responsive-button';
+import { ResponsiveTable } from '@/components/ui/responsive-table';
 import { useTeachers } from '@/hooks/useTeachers';
 import { TeacherModal } from '@/components/forms/teacher-modal';
 import { Users, Plus, Search, Edit, Trash2, AlertCircle, GraduationCap, Eye } from 'lucide-react';
@@ -62,204 +63,193 @@ export default function TeachersPage() {
     refetch();
   };
 
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="space-y-4">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-16 bg-gray-200 rounded"></div>
-            ))}
+  const teachersTableColumns = [
+    {
+      key: 'name',
+      label: 'Professor',
+      priority: 5,
+      render: (value: any, teacher: Teacher) => (
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-purple-600 flex items-center justify-center">
+            <span className="text-xs sm:text-sm font-medium text-white">
+              {teacher.user?.name?.charAt(0)?.toUpperCase() || 'P'}
+            </span>
+          </div>
+          <div className="hidden sm:block">
+            <div className="text-sm font-medium">{teacher.user?.name || 'Nome não disponível'}</div>
+            <div className="text-xs text-gray-500">{teacher.user?.phone || ''}</div>
           </div>
         </div>
-      </div>
-    );
+      ),
+      mobileRender: (value: any, teacher: Teacher) => (
+        <span className="font-medium">{teacher.user?.name || 'Nome não disponível'}</span>
+      )
+    },
+    {
+      key: 'email',
+      label: 'Email',
+      priority: 3,
+      render: (value: any, teacher: Teacher) => teacher.user?.email || 'Email não disponível'
+    },
+    {
+      key: 'specialization',
+      label: 'Especialização',
+      priority: 2,
+      render: (value: string) => value || 'N/A'
+    },
+    {
+      key: 'salary',
+      label: 'Salário',
+      priority: 4,
+      render: (value: number) => `R$ ${(value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      priority: 4,
+      render: (value: string, teacher: Teacher) => (
+        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+          (teacher.status || 'active') === 'active' 
+            ? 'bg-green-100 text-green-800' 
+            : 'bg-red-100 text-red-800'
+        }`}>
+          {(teacher.status || 'active') === 'active' ? 'Ativo' : 'Inativo'}
+        </span>
+      )
+    },
+    {
+      key: 'actions',
+      label: 'Ações',
+      priority: 1,
+      render: (value: any, teacher: Teacher) => (
+        <ResponsiveButtonGroup spacing="sm">
+          <ResponsiveButton
+            size="sm"
+            variant="ghost"
+            onClick={() => handleViewTeacher(teacher)}
+            icon={Eye}
+            className="text-green-600 hover:text-green-700"
+          >
+            <span className="sr-only">Ver</span>
+          </ResponsiveButton>
+          <ResponsiveButton
+            size="sm"
+            variant="ghost"
+            onClick={() => handleEditTeacher(teacher)}
+            icon={Edit}
+            className="text-indigo-600 hover:text-indigo-700"
+          >
+            <span className="sr-only">Editar</span>
+          </ResponsiveButton>
+          <ResponsiveButton
+            size="sm"
+            variant="ghost"
+            onClick={() => handleDeleteTeacher(teacher)}
+            disabled={deleteLoading === teacher.id}
+            loading={deleteLoading === teacher.id}
+            icon={Trash2}
+            className="text-red-600 hover:text-red-700"
+          >
+            <span className="sr-only">Excluir</span>
+          </ResponsiveButton>
+        </ResponsiveButtonGroup>
+      )
+    }
+  ];
+
+  if (isLoading) {
+    return <ResponsiveTable data={[]} columns={teachersTableColumns} loading={true} />;
   }
 
   return (
-    <div className="container mx-auto px-6">
-      <div className="flex justify-between items-center mb-8">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Professores</h1>
-          <p className="text-gray-600">Gerencie os professores da escola</p>
+          <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--foreground)' }}>
+            Professores
+          </h1>
+          <p className="text-sm sm:text-base mt-1" style={{ color: 'var(--muted-foreground)' }}>
+            Gerencie os professores da escola
+          </p>
         </div>
-        <Button 
+        <ResponsiveButton 
           onClick={handleNewTeacher}
-          className="bg-indigo-600 hover:bg-indigo-700 flex items-center gap-2"
+          icon={Plus}
+          iconPosition="left"
+          size="md"
         >
-          <Plus className="h-4 w-4" />
           Novo Professor
-        </Button>
+        </ResponsiveButton>
       </div>
 
-      {/* Search */}
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="h-5 w-5 absolute left-3 top-3 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Buscar professores..."
-            className="pl-10 pr-4 py-2 border border-gray-300 bg-transparent text-gray-900 rounded-md w-full md:w-96 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card>
-          <CardContent className="p-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <ResponsiveCard>
+          <ResponsiveCardContent>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-700">Total de Professores</p>
-                <p className="text-3xl font-bold text-gray-900">{teachers?.length || 0}</p>
+                <p className="text-sm font-medium" style={{ color: 'var(--muted-foreground)' }}>
+                  Total de Professores
+                </p>
+                <p className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--foreground)' }}>
+                  {teachers?.length || 0}
+                </p>
               </div>
-              <GraduationCap className="h-8 w-8 text-indigo-600" />
+              <GraduationCap className="h-6 w-6 sm:h-8 sm:w-8 text-indigo-600" />
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
+          </ResponsiveCardContent>
+        </ResponsiveCard>
+        
+        <ResponsiveCard>
+          <ResponsiveCardContent>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-700">Professores Ativos</p>
-                <p className="text-3xl font-bold text-gray-900">
+                <p className="text-sm font-medium" style={{ color: 'var(--muted-foreground)' }}>
+                  Professores Ativos
+                </p>
+                <p className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--foreground)' }}>
                   {teachers?.filter(t => (t.status || 'active') === 'active').length || 0}
                 </p>
               </div>
-              <Users className="h-8 w-8 text-green-600" />
+              <Users className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
+          </ResponsiveCardContent>
+        </ResponsiveCard>
+        
+        <ResponsiveCard className="sm:col-span-2 lg:col-span-1">
+          <ResponsiveCardContent>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-700">Professores Inativos</p>
-                <p className="text-3xl font-bold text-gray-900">
+                <p className="text-sm font-medium" style={{ color: 'var(--muted-foreground)' }}>
+                  Professores Inativos
+                </p>
+                <p className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--foreground)' }}>
                   {teachers?.filter(t => (t.status || 'active') === 'inactive').length || 0}
                 </p>
               </div>
-              <AlertCircle className="h-8 w-8 text-orange-600" />
+              <AlertCircle className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
             </div>
-          </CardContent>
-        </Card>
+          </ResponsiveCardContent>
+        </ResponsiveCard>
       </div>
 
-      {/* Teachers List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold text-gray-900">Lista de Professores</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    Professor
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    Especialização
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    Salário
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    Ações
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredTeachers.filter(teacher => teacher && teacher.id).map((teacher) => (
-                  <tr key={teacher.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="h-10 w-10 rounded-full bg-purple-600 flex items-center justify-center">
-                          <span className="text-sm font-medium text-white">
-                            {teacher.user?.name?.charAt(0)?.toUpperCase() || 'P'}
-                          </span>
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{teacher.user?.name || 'Nome não disponível'}</div>
-                          <div className="text-sm text-gray-500">{teacher.user?.phone || ''}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {teacher.user?.email || 'Email não disponível'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {teacher.specialization || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      R$ {(teacher.salary || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        (teacher.status || 'active') === 'active' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {(teacher.status || 'active') === 'active' ? 'Ativo' : 'Inativo'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleViewTeacher(teacher)}
-                          className="h-8 w-8 p-0 hover:bg-transparent text-green-600 hover:text-green-700"
-                          title="Ver detalhes"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditTeacher(teacher)}
-                          className="h-8 w-8 p-0 hover:bg-transparent text-indigo-600 hover:text-indigo-700"
-                          title="Editar professor"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteTeacher(teacher)}
-                          disabled={deleteLoading === teacher.id}
-                          className="h-8 w-8 p-0 hover:bg-transparent text-red-600 hover:text-red-700"
-                          title="Remover professor"
-                        >
-                          {deleteLoading === teacher.id ? (
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {filteredTeachers.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                {searchTerm ? 'Nenhum professor encontrado' : 'Nenhum professor cadastrado'}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Teachers Table */}
+      <ResponsiveCard>
+        <ResponsiveCardHeader>
+          <ResponsiveCardTitle>Lista de Professores</ResponsiveCardTitle>
+        </ResponsiveCardHeader>
+        <ResponsiveCardContent>
+          <ResponsiveTable
+            data={filteredTeachers.filter(teacher => teacher && teacher.id)}
+            columns={teachersTableColumns}
+            searchable
+            onSearch={setSearchTerm}
+            emptyMessage={searchTerm ? 'Nenhum professor encontrado' : 'Nenhum professor cadastrado'}
+            mobileCardView={true}
+          />
+        </ResponsiveCardContent>
+      </ResponsiveCard>
 
       {/* Modal */}
       <TeacherModal

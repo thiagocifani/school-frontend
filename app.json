@@ -12,7 +12,7 @@
     },
     "NEXT_PUBLIC_API_URL": {
       "description": "API URL for the backend service",
-      "value": "https://your-api-app.herokuapp.com/api/v1"
+      "value": "https://raizes-api-91d5474e5ebf.herokuapp.com/api/v1"
     },
     "NPM_CONFIG_PRODUCTION": {
       "value": "false"
@@ -30,3 +30,4 @@
     }
   ]
 }
+
