@@ -112,6 +112,24 @@ export default function SalariesPage() {
     }
   };
 
+  const handleGeneratePix = async (salary: Salary) => {
+    try {
+      const result = await apiHelper.post(`/salaries/${salary.id}/generate_cora_pix`);
+      
+      if (result.success) {
+        // Show PIX data to user
+        alert(`PIX gerado com sucesso!\n\nCódigo PIX: ${result.pix_data.qr_code}\nValor: R$ ${result.pix_data.amount}\nDestinatário: ${result.pix_data.recipient}`);
+        loadSalaries();
+        loadStatistics();
+      } else {
+        alert(`Erro: ${result.error}`);
+      }
+    } catch (error: any) {
+      console.error('Erro ao gerar PIX:', error);
+      alert('Erro ao gerar PIX do salário');
+    }
+  };
+
   const handleBulkGenerate = async () => {
     try {
       const result = await apiHelper.post('/salaries/bulk_generate', {
@@ -312,9 +330,14 @@ export default function SalariesPage() {
                             Editar
                           </Button>
                           {salary.status === 'pending' && (
-                            <Button size="sm" onClick={() => handlePay(salary)} variant="outline">
-                              Pagar
-                            </Button>
+                            <>
+                              <Button size="sm" onClick={() => handlePay(salary)} variant="outline">
+                                Pagar
+                              </Button>
+                              <Button size="sm" onClick={() => handleGeneratePix(salary)} className="bg-purple-600 hover:bg-purple-700 text-white">
+                                PIX
+                              </Button>
+                            </>
                           )}
                           <Button size="sm" variant="destructive" onClick={() => handleDelete(salary.id)}>
                             Excluir

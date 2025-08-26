@@ -16,7 +16,6 @@ import {
   Clock,
   Layers,
   NotebookPen,
-  Palette,
   TrendingUp,
   Menu,
   X
@@ -35,7 +34,6 @@ const navigation = [
   { name: 'Financeiro', href: '/dashboard/finances/dashboard', icon: DollarSign },
   { name: 'Fluxo de Caixa', href: '/dashboard/finances/cash-flow', icon: TrendingUp },
   { name: 'Relatórios', href: '/dashboard/reports', icon: FileText },
-  { name: 'Demonstração do Tema', href: '/theme-demo', icon: Palette },
 ];
 
 export default function DashboardLayout({

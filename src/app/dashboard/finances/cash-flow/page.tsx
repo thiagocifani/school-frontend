@@ -63,6 +63,43 @@ const COLORS = {
 const CHART_COLORS = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
 export default function CashFlowPage() {
+  // Helper function to transform transaction data from snake_case to camelCase
+  const transformTransaction = (transaction: any) => ({
+    ...transaction,
+    dueDate: transaction.due_date,
+    paidDate: transaction.paid_date,
+    transactionType: transaction.transaction_type,
+    formattedAmount: transaction.formatted_amount,
+    formattedFinalAmount: transaction.formatted_final_amount,
+    finalAmount: transaction.final_amount,
+    paymentMethod: transaction.payment_method,
+    canBePaid: transaction.can_be_paid,
+    canBeCancelled: transaction.can_be_cancelled,
+    statusBadgeClass: transaction.status_badge_class,
+    typeIcon: transaction.type_icon,
+    daysOverdue: transaction.days_overdue,
+    externalId: transaction.external_id,
+    createdAt: transaction.created_at,
+    updatedAt: transaction.updated_at,
+    coraInvoice: transaction.cora_invoice ? {
+      ...transaction.cora_invoice,
+      invoiceId: transaction.cora_invoice.invoice_id,
+      formattedAmount: transaction.cora_invoice.formatted_amount,
+      dueDate: transaction.cora_invoice.due_date,
+      customerName: transaction.cora_invoice.customer_name,
+      customerEmail: transaction.cora_invoice.customer_email,
+      invoiceType: transaction.cora_invoice.invoice_type,
+      boletoUrl: transaction.cora_invoice.boleto_url,
+      pixQrCode: transaction.cora_invoice.pix_qr_code,
+      pixQrCodeUrl: transaction.cora_invoice.pix_qr_code_url,
+      canBeCancelled: transaction.cora_invoice.can_be_cancelled,
+      daysOverdue: transaction.cora_invoice.days_overdue,
+      paidAt: transaction.cora_invoice.paid_at,
+      createdAt: transaction.cora_invoice.created_at,
+      updatedAt: transaction.cora_invoice.updated_at
+    } : null
+  });
+
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
   const [summary, setSummary] = useState<CashFlowSummary | null>(null);
@@ -123,11 +160,24 @@ export default function CashFlowPage() {
       
       const { data } = await financialTransactionApi.getCashFlow(startDate, endDate);
       
+      // Transform snake_case to camelCase for frontend compatibility
       setSummary(data.summary);
-      setDailyBreakdown(data.dailyBreakdown);
-      setMonthlyBreakdown(data.monthlyBreakdown);
-      setRecentTransactions(data.recentTransactions);
-      setOverdueTransactions(data.overdueTransactions);
+      
+      // Transform daily breakdown field names for chart compatibility
+      const transformedDailyBreakdown = (data.daily_breakdown || []).map((day: any) => ({
+        ...day,
+        receivablesPaid: day.receivables_paid,
+        payablesPaid: day.payables_paid,
+        netFlow: day.net_flow,
+        receivablesDue: day.receivables_due,
+        payablesDue: day.payables_due
+      }));
+      setDailyBreakdown(transformedDailyBreakdown);
+      
+      setMonthlyBreakdown(data.monthly_breakdown || []);
+      
+      setRecentTransactions((data.recent_transactions || []).map(transformTransaction));
+      setOverdueTransactions((data.overdue_transactions || []).map(transformTransaction));
       
     } catch (error: any) {
       console.error('Erro ao carregar dados de fluxo de caixa:', error);
@@ -149,7 +199,8 @@ export default function CashFlowPage() {
       };
       
       const { data } = await financialTransactionApi.getAll(filters);
-      setTransactions(data.transactions);
+      
+      setTransactions((data.transactions || []).map(transformTransaction));
     } catch (error: any) {
       console.error('Erro ao carregar transações:', error);
       toast.error(error?.response?.data?.error || 'Erro ao carregar transações');

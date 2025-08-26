@@ -31,6 +31,12 @@ export function ClassModal({ isOpen, onClose, onSuccess, schoolClass }: ClassMod
   const { data: academicTerms } = useAcademicTerms();
   const { data: subjects } = useSubjects();
 
+  // Debug logs
+  console.log("🐛 DEBUG - ClassModal gradeLevels:", gradeLevels);
+  console.log("🐛 DEBUG - ClassModal academicTerms:", academicTerms);
+  console.log("🐛 DEBUG - ClassModal teachers:", teachers?.length || 0, "teachers");
+  console.log("🐛 DEBUG - ClassModal subjects:", subjects?.length || 0, "subjects");
+
   const [formData, setFormData] = useState({
     name: '',
     section: '',

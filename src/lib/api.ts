@@ -73,8 +73,14 @@ export const teacherApi = {
 export const classApi = {
   getAll: (params?: any) => api.get<SchoolClass[]>('/classes', { params }),
   getById: (id: number) => api.get<SchoolClass>(`/classes/${id}`),
-  create: (data: Partial<SchoolClass>) => api.post<SchoolClass>('/classes', data),
-  update: (id: number, data: Partial<SchoolClass>) => api.put<SchoolClass>(`/classes/${id}`, data),
+  create: (data: Partial<SchoolClass>) => {
+    console.log("🐛 DEBUG - classApi.create payload:", { school_class: data });
+    return api.post<SchoolClass>('/classes', { school_class: data });
+  },
+  update: (id: number, data: Partial<SchoolClass>) => {
+    console.log("🐛 DEBUG - classApi.update payload para ID", id, ":", { school_class: data });
+    return api.put<SchoolClass>(`/classes/${id}`, { school_class: data });
+  },
   delete: (id: number) => api.delete(`/classes/${id}`),
   getStudents: (id: number) => api.get<Student[]>(`/classes/${id}/students`),
   getLessons: (id: number) => api.get<Lesson[]>(`/classes/${id}/lessons`),
@@ -209,10 +215,22 @@ export const educationLevelApi = {
 
 // Grade Levels API
 export const gradeLevelApi = {
-  getAll: (params?: any) => api.get<GradeLevel[]>('/grade_levels', { params }),
+  getAll: (params?: any) => {
+    console.log("🐛 DEBUG - gradeLevelApi.getAll called with params:", params);
+    return api.get<GradeLevel[]>('/grade_levels', { params }).then(response => {
+      console.log("🐛 DEBUG - gradeLevelApi.getAll response:", response.data);
+      return response;
+    });
+  },
   getById: (id: number) => api.get<GradeLevel>(`/grade_levels/${id}`),
-  create: (data: Partial<GradeLevel>) => api.post<GradeLevel>('/grade_levels', data),
-  update: (id: number, data: Partial<GradeLevel>) => api.put<GradeLevel>(`/grade_levels/${id}`, data),
+  create: (data: Partial<GradeLevel>) => {
+    console.log("🐛 DEBUG - gradeLevelApi.create payload:", { grade_level: data });
+    return api.post<GradeLevel>('/grade_levels', { grade_level: data });
+  },
+  update: (id: number, data: Partial<GradeLevel>) => {
+    console.log("🐛 DEBUG - gradeLevelApi.update payload para ID", id, ":", { grade_level: data });
+    return api.put<GradeLevel>(`/grade_levels/${id}`, { grade_level: data });
+  },
   delete: (id: number) => api.delete(`/grade_levels/${id}`),
 };
 
@@ -407,8 +425,14 @@ export const adminApi = {
   classes: {
     getAll: (params?: any) => api.get('/admin/classes', { params }),
     getById: (id: number) => api.get(`/admin/classes/${id}`),
-    create: (data: any) => api.post('/admin/classes', { class: data }),
-    update: (id: number, data: any) => api.put(`/admin/classes/${id}`, { class: data }),
+    create: (data: any) => {
+      console.log("🐛 DEBUG - adminApi.classes.create payload:", { school_class: data });
+      return api.post('/admin/classes', { school_class: data });
+    },
+    update: (id: number, data: any) => {
+      console.log("🐛 DEBUG - adminApi.classes.update payload para ID", id, ":", { school_class: data });
+      return api.put(`/admin/classes/${id}`, { school_class: data });
+    },
     delete: (id: number) => api.delete(`/admin/classes/${id}`),
     bulkAddStudents: (id: number, studentIds: number[]) => 
       api.post(`/admin/classes/${id}/bulk_add_students`, { student_ids: studentIds }),

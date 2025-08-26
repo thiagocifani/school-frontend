@@ -2,10 +2,15 @@ const API_BASE = 'http://localhost:3001/api/v1';
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
-  return {
-    'Authorization': `Bearer ${token}`,
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json'
   };
+  
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  return headers;
 };
 
 export const apiHelper = {

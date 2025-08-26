@@ -45,6 +45,7 @@ interface SchoolClass {
     };
   };
   students_count: number;
+  role: 'main_teacher' | 'subject_teacher';
 }
 
 interface Subject {
@@ -94,15 +95,15 @@ export default function TeacherDetailsPage() {
     try {
       setLoading(true);
       
-      // Carregar dados do professor
+      // Carregar dados do professor (inclui turmas e matérias)
       const { data: teacherData } = await teacherApi.getById(Number(teacherId));
       setTeacher(teacherData);
 
-      // Carregar turmas do professor - endpoints customizados não existem
-      setClasses([]); // Por enquanto vazio, precisaremos implementar no backend
+      // Carregar turmas do professor (agora vem do backend)
+      setClasses(teacherData.classes || []);
 
-      // Carregar matérias do professor
-      setSubjects([]); // Por enquanto vazio, precisaremos implementar no backend
+      // Carregar matérias do professor (agora vem do backend)  
+      setSubjects(teacherData.subjects || []);
 
       // Carregar salários
       try {
@@ -358,14 +359,24 @@ export default function TeacherDetailsPage() {
               <div className="space-y-4">
                 {classes.map((schoolClass) => (
                   <div key={schoolClass.id} className="border rounded-lg p-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <div>
                         <label className="text-sm font-medium text-gray-700">Turma</label>
-                        <p className="text-gray-900 font-semibold">
-                          {schoolClass?.grade_level?.name && schoolClass?.name 
-                            ? `${schoolClass.grade_level.name} - ${schoolClass.name}`
-                            : 'Nome não disponível'}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-gray-900 font-semibold">
+                            {schoolClass?.grade_level?.name && schoolClass?.name 
+                              ? `${schoolClass.grade_level.name} - ${schoolClass.name} ${schoolClass.section || ''}`
+                              : 'Nome não disponível'}
+                          </p>
+                          <Badge 
+                            className={schoolClass.role === 'main_teacher' 
+                              ? 'bg-blue-100 text-blue-800' 
+                              : 'bg-green-100 text-green-800'
+                            }
+                          >
+                            {schoolClass.role === 'main_teacher' ? 'Professor Principal' : 'Professor de Matéria'}
+                          </Badge>
+                        </div>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-700">Período</label>
@@ -377,7 +388,7 @@ export default function TeacherDetailsPage() {
                           {schoolClass?.students_count || 0} / {schoolClass?.max_students || 0}
                         </p>
                       </div>
-                      <div className="md:col-span-3">
+                      <div>
                         <label className="text-sm font-medium text-gray-700">Nível de Ensino</label>
                         <p className="text-gray-900">{schoolClass?.grade_level?.education_level?.name || 'N/A'}</p>
                       </div>
@@ -385,9 +396,15 @@ export default function TeacherDetailsPage() {
                   </div>
                 ))}
                 {classes.length === 0 && (
-                  <p className="text-gray-500 text-center py-8">
-                    Nenhuma turma atribuída
-                  </p>
+                  <div className="text-center py-12">
+                    <Users className="mx-auto h-12 w-12 text-gray-400" />
+                    <p className="mt-2 text-sm text-gray-500">
+                      Nenhuma turma atribuída a este professor
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      O professor ainda não foi designado como professor principal nem possui matérias atribuídas
+                    </p>
+                  </div>
                 )}
               </div>
             </CardContent>

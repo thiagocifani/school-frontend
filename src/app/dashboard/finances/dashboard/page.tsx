@@ -187,11 +187,11 @@ export default function FinancialDashboard() {
 
       {/* Ações Rápidas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Gestão de Mensalidades</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <ResponsiveCard>
+          <ResponsiveCardHeader>
+            <ResponsiveCardTitle>Gestão de Mensalidades</ResponsiveCardTitle>
+          </ResponsiveCardHeader>
+          <ResponsiveCardContent className="space-y-4">
             <div className="flex justify-between items-center">
               <span>Total de mensalidades do mês:</span>
               <strong>R$ {data.totalTuitions.toLocaleString('pt-BR')}</strong>
@@ -202,17 +202,17 @@ export default function FinancialDashboard() {
             </div>
             <div className="flex gap-2">
               <Link href="/dashboard/finances/tuitions" className="flex-1">
-                <Button className="w-full">Gerenciar Mensalidades</Button>
+                <ResponsiveButton className="w-full">Gerenciar Mensalidades</ResponsiveButton>
               </Link>
             </div>
-          </CardContent>
-        </Card>
+          </ResponsiveCardContent>
+        </ResponsiveCard>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Gestão de Salários</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <ResponsiveCard>
+          <ResponsiveCardHeader>
+            <ResponsiveCardTitle>Gestão de Salários</ResponsiveCardTitle>
+          </ResponsiveCardHeader>
+          <ResponsiveCardContent className="space-y-4">
             <div className="flex justify-between items-center">
               <span>Total de salários do mês:</span>
               <strong>R$ {data.totalSalaries.toLocaleString('pt-BR')}</strong>
@@ -223,22 +223,22 @@ export default function FinancialDashboard() {
             </div>
             <div className="flex gap-2">
               <Link href="/dashboard/finances/salaries" className="flex-1">
-                <Button className="w-full">Gerenciar Salários</Button>
+                <ResponsiveButton className="w-full">Gerenciar Salários</ResponsiveButton>
               </Link>
             </div>
-          </CardContent>
-        </Card>
+          </ResponsiveCardContent>
+        </ResponsiveCard>
       </div>
 
       {/* Cora Payment Statistics */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <ResponsiveCard className="mb-6">
+        <ResponsiveCardHeader>
+          <ResponsiveCardTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5" />
             Estatísticas Cora API
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+          </ResponsiveCardTitle>
+        </ResponsiveCardHeader>
+        <ResponsiveCardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <h3 className="text-2xl font-bold text-blue-600">{data.coraStats.totalInvoices}</h3>
@@ -296,15 +296,15 @@ export default function FinancialDashboard() {
               ))}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </ResponsiveCardContent>
+      </ResponsiveCard>
 
       {/* Resumo Financeiro */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Resumo Financeiro Mensal</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <ResponsiveCard>
+        <ResponsiveCardHeader>
+          <ResponsiveCardTitle>Resumo Financeiro Mensal</ResponsiveCardTitle>
+        </ResponsiveCardHeader>
+        <ResponsiveCardContent>
           <div className="space-y-4">
             <div className="flex justify-between items-center py-2 border-b">
               <span className="font-medium">Receitas (Mensalidades)</span>
@@ -325,8 +325,8 @@ export default function FinancialDashboard() {
               </span>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </ResponsiveCardContent>
+      </ResponsiveCard>
     </div>
   );
 }
