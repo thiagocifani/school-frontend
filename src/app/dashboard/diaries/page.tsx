@@ -1,19 +1,38 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Plus, BookOpen, Users, Calendar, TrendingUp, Save, X } from 'lucide-react';
-import { diaryApi } from '@/lib/api';
-import { Diary } from '@/types/diary';
-import toast from 'react-hot-toast';
-import Link from 'next/link';
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import {
+  Plus,
+  BookOpen,
+  Users,
+  Calendar,
+  TrendingUp,
+  Save,
+  X,
+} from "lucide-react";
+import { diaryApi, teacherApi, classApi, subjectApi, academicTermApi } from "@/lib/api";
+import { Diary } from "@/types/diary";
+import toast from "react-hot-toast";
+import Link from "next/link";
 
 interface Teacher {
   id: number;
@@ -49,8 +68,8 @@ interface NewDiaryForm {
 }
 
 const defaultForm: NewDiaryForm = {
-  name: '',
-  description: '',
+  name: "",
+  description: "",
   teacherId: null,
   schoolClassId: null,
   subjectId: null,
@@ -60,14 +79,14 @@ const defaultForm: NewDiaryForm = {
 export default function DiariesPage() {
   const [diaries, setDiaries] = useState<Diary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+
   // Modal states
   const [showNewDiaryModal, setShowNewDiaryModal] = useState(false);
   const [formData, setFormData] = useState<NewDiaryForm>(defaultForm);
   const [saving, setSaving] = useState(false);
-  
+
   // Options data
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [schoolClasses, setSchoolClasses] = useState<SchoolClass[]>([]);
@@ -81,75 +100,92 @@ export default function DiariesPage() {
   const loadDiaries = async () => {
     try {
       const params: any = {};
-      if (statusFilter !== 'all') {
+      if (statusFilter !== "all") {
         params.status = statusFilter;
       }
-      
+
       const { data } = await diaryApi.getAll(params);
       setDiaries(data);
     } catch (error) {
-      console.error('Error loading diaries:', error);
+      console.error("Error loading diaries:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredDiaries = diaries.filter(diary =>
-    diary.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    diary.subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    diary.schoolClass.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredDiaries = diaries.filter(
+    (diary) =>
+      diary.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      diary.subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      diary.schoolClass.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'completed': return 'bg-blue-100 text-blue-800';
-      case 'archived': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "active":
+        return "bg-green-100 text-green-800";
+      case "completed":
+        return "bg-blue-100 text-blue-800";
+      case "archived":
+        return "bg-gray-100 text-gray-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'active': return 'Ativo';
-      case 'completed': return 'Concluído';
-      case 'archived': return 'Arquivado';
-      default: return status;
+      case "active":
+        return "Ativo";
+      case "completed":
+        return "Concluído";
+      case "archived":
+        return "Arquivado";
+      default:
+        return status;
     }
   };
 
   const loadFormData = async () => {
     try {
-      // Mock data - In a real implementation, you'd load these from your APIs
-      setTeachers([
-        { id: 1, name: 'Prof. Maria Silva', email: 'maria@escola.com' },
-        { id: 2, name: 'Prof. João Santos', email: 'joao@escola.com' },
-        { id: 3, name: 'Prof. Ana Costa', email: 'ana@escola.com' },
+      // Load from APIs with safe fallbacks and minimal transformations
+      const [teachersRes, classesRes, subjectsRes, termsRes] = await Promise.all([
+        teacherApi.getAll().catch(() => ({ data: [] })),
+        classApi.getAll().catch(() => ({ data: [] })),
+        subjectApi.getAll().catch(() => ({ data: [] })),
+        academicTermApi.getAll().catch(() => ({ data: [] })),
       ]);
 
-      setSchoolClasses([
-        { id: 1, name: 'Infantil I', section: 'A' },
-        { id: 2, name: 'Infantil II', section: 'A' },
-        { id: 3, name: '1º Ano', section: 'A' },
-        { id: 4, name: '2º Ano', section: 'A' },
-      ]);
+      const teachersData = (teachersRes?.data || []).map((t: any) => ({
+        id: t.id,
+        name: t.user?.name || t.name || "Professor",
+        email: t.user?.email || t.email || "",
+      }));
+      setTeachers(teachersData);
 
-      setSubjects([
-        { id: 1, name: 'Português', code: 'PORT' },
-        { id: 2, name: 'Matemática', code: 'MAT' },
-        { id: 3, name: 'Artes', code: 'ART' },
-        { id: 4, name: 'Educação Física', code: 'EDF' },
-      ]);
+      const classesData = (classesRes?.data || []).map((c: any) => ({
+        id: c.id,
+        name: c.name || `Turma ${c.id}`,
+        section: c.section || "",
+      }));
+      setSchoolClasses(classesData);
 
-      setAcademicTerms([
-        { id: 1, name: '1º Bimestre 2024', year: 2024 },
-        { id: 2, name: '2º Bimestre 2024', year: 2024 },
-        { id: 3, name: '3º Bimestre 2024', year: 2024 },
-        { id: 4, name: '4º Bimestre 2024', year: 2024 },
-      ]);
+      const subjectsData = (subjectsRes?.data || []).map((s: any) => ({
+        id: s.id,
+        name: s.name || "Matéria",
+        code: s.code || s.name?.substring(0, 3).toUpperCase() || "MAT",
+      }));
+      setSubjects(subjectsData);
+
+      const termsData = (termsRes?.data || []).map((term: any) => ({
+        id: term.id,
+        name: term.name || `Período ${term.id}`,
+        year: term.year || new Date().getFullYear(),
+      }));
+      setAcademicTerms(termsData);
     } catch (error) {
-      console.error('Error loading form data:', error);
-      toast.error('Erro ao carregar dados do formulário');
+      console.error("Error loading form data:", error);
+      toast.error("Erro ao carregar dados do formulário");
     }
   };
 
@@ -160,34 +196,34 @@ export default function DiariesPage() {
   };
 
   const handleInputChange = (field: keyof NewDiaryForm, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name.trim()) {
-      toast.error('Nome do diário é obrigatório');
+      toast.error("Nome do diário é obrigatório");
       return;
     }
-    
+
     if (!formData.teacherId) {
-      toast.error('Professor é obrigatório');
+      toast.error("Professor é obrigatório");
       return;
     }
-    
+
     if (!formData.schoolClassId) {
-      toast.error('Turma é obrigatória');
+      toast.error("Turma é obrigatória");
       return;
     }
-    
+
     if (!formData.subjectId) {
-      toast.error('Matéria é obrigatória');
+      toast.error("Matéria é obrigatória");
       return;
     }
 
     if (!formData.academicTermId) {
-      toast.error('Período letivo é obrigatório');
+      toast.error("Período letivo é obrigatório");
       return;
     }
 
@@ -201,13 +237,14 @@ export default function DiariesPage() {
         subject_id: formData.subjectId,
         academic_term_id: formData.academicTermId,
       });
-      
-      toast.success('Diário criado com sucesso!');
+
+      toast.success("Diário criado com sucesso!");
       setShowNewDiaryModal(false);
       loadDiaries(); // Reload the list
     } catch (error: any) {
-      console.error('Error creating diary:', error);
-      const errorMessage = error.response?.data?.message || 'Erro ao criar diário';
+      console.error("Error creating diary:", error);
+      const errorMessage =
+        error.response?.data?.message || "Erro ao criar diário";
       toast.error(errorMessage);
     } finally {
       setSaving(false);
@@ -220,11 +257,17 @@ export default function DiariesPage() {
   };
 
   const totalDiaries = diaries.length;
-  const activeDiaries = diaries.filter(d => d.status === 'active').length;
-  const completedDiaries = diaries.filter(d => d.status === 'completed').length;
-  const averageProgress = diaries.length > 0 
-    ? Math.round(diaries.reduce((sum, d) => sum + d.progressPercentage, 0) / diaries.length)
-    : 0;
+  const activeDiaries = diaries.filter((d) => d.status === "active").length;
+  const completedDiaries = diaries.filter(
+    (d) => d.status === "completed",
+  ).length;
+  const averageProgress =
+    diaries.length > 0
+      ? Math.round(
+          diaries.reduce((sum, d) => sum + d.progressPercentage, 0) /
+            diaries.length,
+        )
+      : 0;
 
   if (loading) {
     return (
@@ -245,10 +288,14 @@ export default function DiariesPage() {
     <div className="container mx-auto px-6">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Diários Eletrônicos</h1>
-          <p className="text-gray-600">Gerencie os diários de suas disciplinas</p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Diários Eletrônicos
+          </h1>
+          <p className="text-gray-600">
+            Gerencie os diários de suas disciplinas
+          </p>
         </div>
-        <Button 
+        <Button
           onClick={handleNewDiary}
           className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 hover:text-indigo-800 border border-indigo-300 flex items-center gap-2 cursor-pointer"
         >
@@ -263,8 +310,12 @@ export default function DiariesPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-700">Total de Diários</p>
-                <p className="text-3xl font-bold text-gray-900">{totalDiaries}</p>
+                <p className="text-sm font-medium text-gray-700">
+                  Total de Diários
+                </p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {totalDiaries}
+                </p>
               </div>
               <BookOpen className="h-8 w-8 text-indigo-600" />
             </div>
@@ -274,8 +325,12 @@ export default function DiariesPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-700">Diários Ativos</p>
-                <p className="text-3xl font-bold text-gray-900">{activeDiaries}</p>
+                <p className="text-sm font-medium text-gray-700">
+                  Diários Ativos
+                </p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {activeDiaries}
+                </p>
               </div>
               <Calendar className="h-8 w-8 text-green-600" />
             </div>
@@ -285,8 +340,12 @@ export default function DiariesPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-700">Diários Concluídos</p>
-                <p className="text-3xl font-bold text-gray-900">{completedDiaries}</p>
+                <p className="text-sm font-medium text-gray-700">
+                  Diários Concluídos
+                </p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {completedDiaries}
+                </p>
               </div>
               <Users className="h-8 w-8 text-blue-600" />
             </div>
@@ -296,8 +355,12 @@ export default function DiariesPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-700">Progresso Médio</p>
-                <p className="text-3xl font-bold text-gray-900">{averageProgress}%</p>
+                <p className="text-sm font-medium text-gray-700">
+                  Progresso Médio
+                </p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {averageProgress}%
+                </p>
               </div>
               <TrendingUp className="h-8 w-8 text-purple-600" />
             </div>
@@ -323,10 +386,30 @@ export default function DiariesPage() {
               <SelectValue placeholder="Filtrar por status" />
             </SelectTrigger>
             <SelectContent className="bg-white border-gray-200">
-              <SelectItem value="all" className="text-gray-900 hover:bg-gray-50">Todos os status</SelectItem>
-              <SelectItem value="active" className="text-gray-900 hover:bg-gray-50">Ativo</SelectItem>
-              <SelectItem value="completed" className="text-gray-900 hover:bg-gray-50">Concluído</SelectItem>
-              <SelectItem value="archived" className="text-gray-900 hover:bg-gray-50">Arquivado</SelectItem>
+              <SelectItem
+                value="all"
+                className="text-gray-900 hover:bg-gray-50"
+              >
+                Todos os status
+              </SelectItem>
+              <SelectItem
+                value="active"
+                className="text-gray-900 hover:bg-gray-50"
+              >
+                Ativo
+              </SelectItem>
+              <SelectItem
+                value="completed"
+                className="text-gray-900 hover:bg-gray-50"
+              >
+                Concluído
+              </SelectItem>
+              <SelectItem
+                value="archived"
+                className="text-gray-900 hover:bg-gray-50"
+              >
+                Arquivado
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -335,7 +418,9 @@ export default function DiariesPage() {
       {/* Diaries List */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl font-semibold text-gray-900">Lista de Diários</CardTitle>
+          <CardTitle className="text-xl font-semibold text-gray-900">
+            Lista de Diários
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -373,8 +458,12 @@ export default function DiariesPage() {
                           </span>
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{diary.name}</div>
-                          <div className="text-sm text-gray-500">{diary.subject.name}</div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {diary.name}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {diary.subject.name}
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -389,15 +478,19 @@ export default function DiariesPage() {
                         {diary.completedLessons}/{diary.totalLessons} aulas
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-indigo-600 h-2 rounded-full" 
+                        <div
+                          className="bg-indigo-600 h-2 rounded-full"
                           style={{ width: `${diary.progressPercentage}%` }}
                         ></div>
                       </div>
-                      <div className="text-xs text-gray-500">{diary.progressPercentage}%</div>
+                      <div className="text-xs text-gray-500">
+                        {diary.progressPercentage}%
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(diary.status)}`}>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(diary.status)}`}
+                      >
                         {getStatusLabel(diary.status)}
                       </span>
                     </td>
@@ -406,7 +499,9 @@ export default function DiariesPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => window.location.href = `/dashboard/diaries/${diary.id}`}
+                          onClick={() =>
+                            (window.location.href = `/dashboard/diaries/${diary.id}`)
+                          }
                           className="h-8 w-8 p-0 hover:bg-transparent text-indigo-600 hover:text-indigo-700"
                           title="Ver diário"
                         >
@@ -415,7 +510,9 @@ export default function DiariesPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => window.location.href = `/dashboard/diaries/${diary.id}/lessons`}
+                          onClick={() =>
+                            (window.location.href = `/dashboard/diaries/${diary.id}/lessons`)
+                          }
                           className="h-8 w-8 p-0 hover:bg-transparent text-green-600 hover:text-green-700"
                           title="Ver aulas"
                         >
@@ -429,7 +526,9 @@ export default function DiariesPage() {
             </table>
             {filteredDiaries.length === 0 && (
               <div className="text-center py-8 text-gray-500">
-                {searchTerm ? 'Nenhum diário encontrado' : 'Nenhum diário cadastrado'}
+                {searchTerm
+                  ? "Nenhum diário encontrado"
+                  : "Nenhum diário cadastrado"}
               </div>
             )}
           </div>
@@ -445,7 +544,7 @@ export default function DiariesPage() {
               Novo Diário Eletrônico
             </DialogTitle>
           </DialogHeader>
-          
+
           <form onSubmit={handleSubmit} className="space-y-6 py-4">
             {/* Name */}
             <div>
@@ -454,7 +553,7 @@ export default function DiariesPage() {
               </label>
               <Input
                 value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
+                onChange={(e) => handleInputChange("name", e.target.value)}
                 placeholder="Ex: Diário de Matemática - 1º Ano A"
                 required
                 className="w-full"
@@ -472,37 +571,49 @@ export default function DiariesPage() {
                   Professor *
                 </label>
                 <Select
-                  value={formData.teacherId?.toString() || ''}
-                  onValueChange={(value) => handleInputChange('teacherId', Number(value))}
+                  value={formData.teacherId?.toString() || ""}
+                  onValueChange={(value) =>
+                    handleInputChange("teacherId", Number(value))
+                  }
                 >
                   <SelectTrigger className="bg-white border-gray-300 text-gray-900 focus:border-indigo-500 focus:ring-indigo-500">
                     <SelectValue placeholder="Selecione o professor" />
                   </SelectTrigger>
                   <SelectContent className="bg-white border-gray-200">
                     {teachers.map((teacher) => (
-                      <SelectItem key={teacher.id} value={teacher.id.toString()} className="text-gray-900 hover:bg-gray-50">
+                      <SelectItem
+                        key={teacher.id}
+                        value={teacher.id.toString()}
+                        className="text-gray-900 hover:bg-gray-50"
+                      >
                         {teacher.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Users className="inline h-4 w-4 mr-2" />
                   Turma *
                 </label>
                 <Select
-                  value={formData.schoolClassId?.toString() || ''}
-                  onValueChange={(value) => handleInputChange('schoolClassId', Number(value))}
+                  value={formData.schoolClassId?.toString() || ""}
+                  onValueChange={(value) =>
+                    handleInputChange("schoolClassId", Number(value))
+                  }
                 >
                   <SelectTrigger className="bg-white border-gray-300 text-gray-900 focus:border-indigo-500 focus:ring-indigo-500">
                     <SelectValue placeholder="Selecione a turma" />
                   </SelectTrigger>
                   <SelectContent className="bg-white border-gray-200">
                     {schoolClasses.map((schoolClass) => (
-                      <SelectItem key={schoolClass.id} value={schoolClass.id.toString()} className="text-gray-900 hover:bg-gray-50">
+                      <SelectItem
+                        key={schoolClass.id}
+                        value={schoolClass.id.toString()}
+                        className="text-gray-900 hover:bg-gray-50"
+                      >
                         {schoolClass.name} {schoolClass.section}
                       </SelectItem>
                     ))}
@@ -516,15 +627,21 @@ export default function DiariesPage() {
                   Matéria *
                 </label>
                 <Select
-                  value={formData.subjectId?.toString() || ''}
-                  onValueChange={(value) => handleInputChange('subjectId', Number(value))}
+                  value={formData.subjectId?.toString() || ""}
+                  onValueChange={(value) =>
+                    handleInputChange("subjectId", Number(value))
+                  }
                 >
                   <SelectTrigger className="bg-white border-gray-300 text-gray-900 focus:border-indigo-500 focus:ring-indigo-500">
                     <SelectValue placeholder="Selecione a matéria" />
                   </SelectTrigger>
                   <SelectContent className="bg-white border-gray-200">
                     {subjects.map((subject) => (
-                      <SelectItem key={subject.id} value={subject.id.toString()} className="text-gray-900 hover:bg-gray-50">
+                      <SelectItem
+                        key={subject.id}
+                        value={subject.id.toString()}
+                        className="text-gray-900 hover:bg-gray-50"
+                      >
                         {subject.name} ({subject.code})
                       </SelectItem>
                     ))}
@@ -540,15 +657,21 @@ export default function DiariesPage() {
                 Período Letivo *
               </label>
               <Select
-                value={formData.academicTermId?.toString() || ''}
-                onValueChange={(value) => handleInputChange('academicTermId', Number(value))}
+                value={formData.academicTermId?.toString() || ""}
+                onValueChange={(value) =>
+                  handleInputChange("academicTermId", Number(value))
+                }
               >
                 <SelectTrigger className="w-full bg-white border-gray-300 text-gray-900 focus:border-indigo-500 focus:ring-indigo-500">
                   <SelectValue placeholder="Selecione o período" />
                 </SelectTrigger>
                 <SelectContent className="bg-white border-gray-200">
                   {academicTerms.map((term) => (
-                    <SelectItem key={term.id} value={term.id.toString()} className="text-gray-900 hover:bg-gray-50">
+                    <SelectItem
+                      key={term.id}
+                      value={term.id.toString()}
+                      className="text-gray-900 hover:bg-gray-50"
+                    >
                       {term.name}
                     </SelectItem>
                   ))}
@@ -564,7 +687,9 @@ export default function DiariesPage() {
               <Textarea
                 rows={3}
                 value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("description", e.target.value)
+                }
                 placeholder="Descreva os objetivos e conteúdo programático do diário..."
                 className="w-full"
               />
@@ -584,9 +709,9 @@ export default function DiariesPage() {
                 <X className="h-4 w-4 mr-2" />
                 Cancelar
               </Button>
-              <Button 
-                type="submit" 
-                disabled={saving} 
+              <Button
+                type="submit"
+                disabled={saving}
                 className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 hover:text-indigo-800 border border-indigo-300 cursor-pointer"
               >
                 {saving ? (
@@ -605,7 +730,7 @@ export default function DiariesPage() {
           </form>
         </DialogContent>
       </Dialog>
-
     </div>
   );
 }
+

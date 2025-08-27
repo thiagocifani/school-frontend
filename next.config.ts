@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   experimental: {
     // Improve HMR stability
     optimizePackageImports: ['lucide-react', 'recharts'],
+    optimizeCss: false,
   },
   // Configure for production deployment
   output: 'standalone',
