@@ -249,8 +249,14 @@ export const dashboardApi = {
 export const diaryApi = {
   getAll: (params?: any) => api.get<Diary[]>('/diaries', { params }),
   getById: (id: number) => api.get<Diary>(`/diaries/${id}`),
-  create: (data: Partial<Diary>) => api.post<Diary>('/diaries', data),
-  update: (id: number, data: Partial<Diary>) => api.put<Diary>(`/diaries/${id}`, data),
+  create: (data: Partial<Diary>) => {
+    console.log("🐛 DEBUG - diaryApi.create payload:", { diary: data });
+    return api.post<Diary>('/diaries', { diary: data });
+  },
+  update: (id: number, data: Partial<Diary>) => {
+    console.log("🐛 DEBUG - diaryApi.update payload para ID", id, ":", { diary: data });
+    return api.put<Diary>(`/diaries/${id}`, { diary: data });
+  },
   delete: (id: number) => api.delete(`/diaries/${id}`),
   getStudents: (id: number) => api.get(`/diaries/${id}/students`),
   getStatistics: (id: number) => api.get<DiaryStatistics>(`/diaries/${id}/statistics`),

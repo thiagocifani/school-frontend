@@ -46,6 +46,7 @@ export interface Student {
   specificMedicationDetails?: string;
   specific_medication_details?: string; // API response format
   schoolClass?: SchoolClass;
+  school_class?: SchoolClass; // API response format
   guardians?: Guardian[];
   recentGrades?: Grade[];
   attendanceSummary?: AttendanceSummary;

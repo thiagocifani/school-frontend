@@ -91,7 +91,10 @@ export default function StudentsPage() {
       key: 'schoolClass',
       label: 'Turma',
       priority: 2,
-      render: (value: any) => value?.name || 'Sem turma'
+      render: (value: any, student: Student) => {
+        const schoolClass = student.schoolClass || student.school_class;
+        return schoolClass?.name || 'Sem turma';
+      }
     },
     {
       key: 'status',

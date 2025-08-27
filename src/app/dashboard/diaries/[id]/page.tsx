@@ -634,16 +634,20 @@ export default function DiaryDetailsPage() {
                         <div>
                           <p className="text-sm text-gray-500">Média</p>
                           <p className="font-bold text-lg text-gray-900">
-                            {student.average > 0 ? student.average.toFixed(1) : '-'}
+                            {(typeof student.average === 'number' && student.average > 0) ? student.average.toFixed(1) : '-'}
                           </p>
                         </div>
                         <div>
                           <p className="text-sm text-gray-500">Presença</p>
-                          <p className="font-bold text-lg text-gray-900">{student.attendancePercentage}%</p>
+                          <p className="font-bold text-lg text-gray-900">
+                            {typeof student.attendancePercentage === 'number' ? student.attendancePercentage : 0}%
+                          </p>
                         </div>
                         <div>
                           <p className="text-sm text-gray-500">Notas</p>
-                          <p className="font-bold text-lg text-gray-900">{student.gradesCount}</p>
+                          <p className="font-bold text-lg text-gray-900">
+                            {typeof student.gradesCount === 'number' ? student.gradesCount : 0}
+                          </p>
                         </div>
                       </div>
                     </div>

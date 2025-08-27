@@ -342,17 +342,18 @@ export function StudentForm({
       }
 
       // Reset todos os valores do form
+      const schoolClass = student.schoolClass || student.school_class;
       console.log("🔍 Setting form values - student school class:", {
-        schoolClass: student.schoolClass,
-        schoolClassId: student.schoolClass?.id,
-        schoolClassIdType: typeof student.schoolClass?.id
+        schoolClass: schoolClass,
+        schoolClassId: schoolClass?.id,
+        schoolClassIdType: typeof schoolClass?.id
       });
       setValue("name", student.name || "");
       setValue("birthDate", student.birth_date || student.birthDate || "");
       setValue("registrationNumber", student.registration_number || student.registrationNumber || "");
       setValue("status", student.status || "active");
-      console.log("🔍 Setting schoolClassId to:", student.schoolClass?.id || null);
-      setValue("schoolClassId", student.schoolClass?.id || null);
+      console.log("🔍 Setting schoolClassId to:", schoolClass?.id || null);
+      setValue("schoolClassId", schoolClass?.id || null);
       setValue("cpf", student.cpf || "");
       setValue("gender", student.gender || "male");
       setValue("birthPlace", student.birth_place || student.birthPlace || "");

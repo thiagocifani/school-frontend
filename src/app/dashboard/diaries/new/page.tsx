@@ -273,7 +273,16 @@ export default function NewDiaryPage() {
       router.push('/dashboard/diaries');
     } catch (error: any) {
       console.error('Error creating diary:', error);
-      const errorMessage = error.response?.data?.message || 'Erro ao criar diário';
+      console.error('Error response data:', error.response?.data);
+      
+      // Improved error handling - show specific errors if available
+      let errorMessage = 'Erro ao criar diário';
+      if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+        errorMessage = error.response.data.errors.join(', ');
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
       toast.error(errorMessage);
     } finally {
       setSaving(false);
