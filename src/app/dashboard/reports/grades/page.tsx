@@ -86,77 +86,77 @@ export default function GradesReportsPage() {
         academic_term_id: selectedTerm
       });
 
-      if (data && data.length > 0) {
-        setGradesData(data);
-        toast.success('Boletim da turma gerado com sucesso!');
-      } else {
-        // Fallback para dados simulados se não houver dados reais
-        const classSubjects = subjects.slice(0, 5); // Pegar 5 matérias principais
+      console.log('📊 Dados recebidos da API de notas:', data);
+
+      // Transformar os dados da API para o formato esperado pela interface
+      if (data && data.grades && data.grades.length > 0) {
+        // Agrupar notas por estudante
+        const studentGradesMap = new Map();
         
-        const mockData = students.map(student => {
-          const studentGrades = classSubjects.map(subject => ({
-            subject: subject.name,
-            grades: [
-              { type: 'Prova 1', value: Math.floor(Math.random() * 3) + 7.5 },
-              { type: 'Trabalho', value: Math.floor(Math.random() * 2) + 8 },
-              { type: 'Participação', value: Math.floor(Math.random() * 2) + 8.5 }
-            ],
-            average: 0
-          }));
-
-          // Calcular médias
-          studentGrades.forEach(sg => {
-            sg.average = sg.grades.reduce((sum, g) => sum + g.value, 0) / sg.grades.length;
+        data.grades.forEach((grade: any) => {
+          const studentId = grade.student.id;
+          const studentName = grade.student.name;
+          const subjectName = grade.diary?.subject?.name || 'Matéria não identificada';
+          
+          if (!studentGradesMap.has(studentId)) {
+            studentGradesMap.set(studentId, {
+              id: studentId,
+              name: studentName,
+              subjects: new Map()
+            });
+          }
+          
+          const student = studentGradesMap.get(studentId);
+          
+          if (!student.subjects.has(subjectName)) {
+            student.subjects.set(subjectName, {
+              subject: subjectName,
+              grades: [],
+              average: 0
+            });
+          }
+          
+          student.subjects.get(subjectName).grades.push({
+            type: grade.gradeType || 'Avaliação',
+            value: parseFloat(grade.value) || 0
           });
-
-          const generalAverage = studentGrades.reduce((sum, sg) => sum + sg.average, 0) / studentGrades.length;
-
+        });
+        
+        // Converter Map para array e calcular médias
+        const processedData = Array.from(studentGradesMap.values()).map((student: any) => {
+          const subjects = Array.from(student.subjects.values());
+          
+          // Calcular média de cada matéria
+          subjects.forEach((subject: any) => {
+            const sum = subject.grades.reduce((acc: number, grade: any) => acc + grade.value, 0);
+            subject.average = sum / subject.grades.length;
+          });
+          
+          // Calcular média geral do aluno
+          const generalAverage = subjects.reduce((acc: number, subject: any) => acc + subject.average, 0) / subjects.length;
+          
           return {
             id: student.id,
             name: student.name,
-            subjects: studentGrades,
-            generalAverage,
+            subjects: subjects,
+            generalAverage: generalAverage,
             status: generalAverage >= 7 ? 'approved' : generalAverage >= 5 ? 'recovery' : 'failed'
           };
         });
-
-        setGradesData(mockData);
-        toast.success('Boletim da turma gerado (dados simulados)');
+        
+        setGradesData(processedData);
+        toast.success('Boletim da turma gerado com dados reais do banco!');
+        
+      } else {
+        // Se não há dados reais, informar ao usuário
+        toast.error('Não foram encontradas notas para esta turma e período');
+        setGradesData([]);
       }
+      
     } catch (error) {
       console.error('Erro ao gerar boletim:', error);
-      
-      // Em caso de erro na API, usar dados simulados
-      const classSubjects = subjects.slice(0, 5);
-      
-      const mockData = students.map(student => {
-        const studentGrades = classSubjects.map(subject => ({
-          subject: subject.name,
-          grades: [
-            { type: 'Prova 1', value: Math.floor(Math.random() * 3) + 7.5 },
-            { type: 'Trabalho', value: Math.floor(Math.random() * 2) + 8 },
-            { type: 'Participação', value: Math.floor(Math.random() * 2) + 8.5 }
-          ],
-          average: 0
-        }));
-
-        studentGrades.forEach(sg => {
-          sg.average = sg.grades.reduce((sum, g) => sum + g.value, 0) / sg.grades.length;
-        });
-
-        const generalAverage = studentGrades.reduce((sum, sg) => sum + sg.average, 0) / studentGrades.length;
-
-        return {
-          id: student.id,
-          name: student.name,
-          subjects: studentGrades,
-          generalAverage,
-          status: generalAverage >= 7 ? 'approved' : generalAverage >= 5 ? 'recovery' : 'failed'
-        };
-      });
-
-      setGradesData(mockData);
-      toast.success('Boletim da turma gerado (dados simulados)');
+      toast.error('Erro ao buscar dados de notas. Verifique se há notas lançadas para esta turma e período.');
+      setGradesData([]);
     } finally {
       setLoading(false);
     }
@@ -176,95 +176,80 @@ export default function GradesReportsPage() {
         academic_term_id: selectedTerm
       });
 
-      if (data && data.length > 0) {
-        setGradesData(data);
-        toast.success('Boletim individual gerado com sucesso!');
-      } else {
-        // Fallback para dados simulados se não houver dados reais
-        const student = students.find(s => s.id === parseInt(selectedStudent));
-        if (!student) return;
+      console.log('📊 Dados recebidos da API de notas do aluno:', data);
 
-        const classSubjects = subjects.slice(0, 6);
+      // Transformar os dados da API para o formato esperado pela interface
+      if (data && data.grades && data.grades.length > 0) {
+        // Agrupar notas por matéria
+        const subjectGradesMap = new Map();
         
-        const studentGrades = classSubjects.map(subject => ({
-          subject: subject.name,
-          grades: [
-            { type: 'Avaliação 1', value: Math.floor(Math.random() * 3) + 7.5, weight: 3 },
-            { type: 'Avaliação 2', value: Math.floor(Math.random() * 2) + 8, weight: 3 },
-            { type: 'Trabalhos', value: Math.floor(Math.random() * 2) + 8.5, weight: 2 },
-            { type: 'Participação', value: Math.floor(Math.random() * 1) + 9, weight: 2 }
-          ],
-          average: 0,
-          attendance: Math.floor(Math.random() * 10) + 85 // 85-95%
-        }));
-
-        // Calcular médias ponderadas
-        studentGrades.forEach(sg => {
-          const totalWeight = sg.grades.reduce((sum, g) => sum + g.weight, 0);
-          const weightedSum = sg.grades.reduce((sum, g) => sum + (g.value * g.weight), 0);
-          sg.average = weightedSum / totalWeight;
+        data.grades.forEach((grade: any) => {
+          const subjectName = grade.diary?.subject?.name || 'Matéria não identificada';
+          
+          if (!subjectGradesMap.has(subjectName)) {
+            subjectGradesMap.set(subjectName, {
+              subject: subjectName,
+              grades: [],
+              average: 0,
+              attendance: 95 // Default attendance since we don't have attendance data in grades
+            });
+          }
+          
+          subjectGradesMap.get(subjectName).grades.push({
+            type: grade.gradeType || 'Avaliação',
+            value: parseFloat(grade.value) || 0,
+            weight: 1 // Default weight
+          });
         });
 
-        const generalAverage = studentGrades.reduce((sum, sg) => sum + sg.average, 0) / studentGrades.length;
+        // Calcular médias por matéria
+        const subjects = Array.from(subjectGradesMap.values());
+        subjects.forEach(subject => {
+          if (subject.grades.length > 0) {
+            const sum = subject.grades.reduce((acc, grade) => acc + grade.value, 0);
+            subject.average = sum / subject.grades.length;
+          }
+        });
 
-        const mockData = [{
-          id: student.id,
-          name: student.name,
-          class: classes.find(c => c.id === parseInt(selectedClass))?.name || '',
-          term: academicTerms.find(t => t.id === parseInt(selectedTerm))?.name || '',
-          subjects: studentGrades,
-          generalAverage,
-          totalAttendance: Math.floor(Math.random() * 5) + 90, // 90-95%
-          status: generalAverage >= 7 ? 'approved' : generalAverage >= 5 ? 'recovery' : 'failed',
-          observations: 'Aluno demonstra boa participação nas atividades propostas.'
+        // Calcular média geral
+        const generalAverage = subjects.length > 0 
+          ? subjects.reduce((sum, subject) => sum + subject.average, 0) / subjects.length 
+          : 0;
+
+        // Determinar status baseado na média geral
+        const status = generalAverage >= 7 ? 'approved' : generalAverage >= 5 ? 'recovery' : 'failed';
+
+        const studentData = [{
+          id: data.student?.id || parseInt(selectedStudent),
+          name: data.student?.name || 'Aluno não identificado',
+          class: data.schoolClass?.name || 'Turma não identificada',
+          term: data.academicTerm?.name || 'Período não identificado',
+          subjects: subjects,
+          generalAverage: parseFloat(generalAverage.toFixed(2)),
+          totalAttendance: 95, // Default attendance
+          status: status,
+          observations: 'Dados obtidos do sistema escolar.'
         }];
 
-        setGradesData(mockData);
-        toast.success('Boletim individual gerado (dados simulados)');
+        setGradesData(studentData);
+        toast.success('Boletim individual gerado com sucesso!');
+        
+        console.log('✅ Dados transformados para interface:', studentData);
+      } else {
+        // Se não há dados de notas para este aluno no período selecionado
+        const student = students.find(s => s.id === parseInt(selectedStudent));
+        const selectedClass = classes.find(c => c.id === parseInt(selectedClass));
+        const selectedTermData = academicTerms.find(t => t.id === parseInt(selectedTerm));
+        
+        toast.error(`Nenhuma nota encontrada para o aluno ${student?.name || 'selecionado'} no período letivo selecionado.`);
+        setGradesData([]);
+        
+        console.log('⚠️ Nenhuma nota encontrada para o aluno no período selecionado');
       }
     } catch (error) {
-      console.error('Erro ao gerar boletim:', error);
-      
-      // Em caso de erro na API, usar dados simulados
-      const student = students.find(s => s.id === parseInt(selectedStudent));
-      if (!student) return;
-
-      const classSubjects = subjects.slice(0, 6);
-      
-      const studentGrades = classSubjects.map(subject => ({
-        subject: subject.name,
-        grades: [
-          { type: 'Avaliação 1', value: Math.floor(Math.random() * 3) + 7.5, weight: 3 },
-          { type: 'Avaliação 2', value: Math.floor(Math.random() * 2) + 8, weight: 3 },
-          { type: 'Trabalhos', value: Math.floor(Math.random() * 2) + 8.5, weight: 2 },
-          { type: 'Participação', value: Math.floor(Math.random() * 1) + 9, weight: 2 }
-        ],
-        average: 0,
-        attendance: Math.floor(Math.random() * 10) + 85
-      }));
-
-      studentGrades.forEach(sg => {
-        const totalWeight = sg.grades.reduce((sum, g) => sum + g.weight, 0);
-        const weightedSum = sg.grades.reduce((sum, g) => sum + (g.value * g.weight), 0);
-        sg.average = weightedSum / totalWeight;
-      });
-
-      const generalAverage = studentGrades.reduce((sum, sg) => sum + sg.average, 0) / studentGrades.length;
-
-      const mockData = [{
-        id: student.id,
-        name: student.name,
-        class: classes.find(c => c.id === parseInt(selectedClass))?.name || '',
-        term: academicTerms.find(t => t.id === parseInt(selectedTerm))?.name || '',
-        subjects: studentGrades,
-        generalAverage,
-        totalAttendance: Math.floor(Math.random() * 5) + 90,
-        status: generalAverage >= 7 ? 'approved' : generalAverage >= 5 ? 'recovery' : 'failed',
-        observations: 'Aluno demonstra boa participação nas atividades propostas.'
-      }];
-
-      setGradesData(mockData);
-      toast.success('Boletim individual gerado (dados simulados)');
+      console.error('❌ Erro ao gerar boletim do aluno:', error);
+      toast.error('Erro ao buscar dados do boletim. Verifique se o aluno possui notas registradas no período selecionado.');
+      setGradesData([]);
     } finally {
       setLoading(false);
     }

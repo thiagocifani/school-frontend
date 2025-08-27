@@ -59,6 +59,13 @@ export function TeacherModal({ isOpen, onClose, onSuccess, teacher }: TeacherMod
     setLoading(true);
 
     try {
+      // For new teachers, password is required
+      if (!teacher && !formData.password) {
+        toast.error('Senha é obrigatória para novos professores');
+        setLoading(false);
+        return;
+      }
+
       const payload = {
         user_attributes: {
           name: formData.name,
@@ -66,13 +73,16 @@ export function TeacherModal({ isOpen, onClose, onSuccess, teacher }: TeacherMod
           phone: formData.phone,
           cpf: formData.cpf,
           role: 'teacher',
-          ...(formData.password && { password: formData.password }),
+          // For new teachers, always include password; for updates, only if provided
+          ...((!teacher || formData.password) && { password: formData.password }),
         },
         salary: parseFloat(formData.salary) || 0,
         hire_date: formData.hireDate,
         specialization: formData.specialization,
         status: formData.status,
       };
+
+      console.log('🐛 DEBUG - Teacher form payload:', payload);
 
       if (teacher) {
         await teacherApi.update(teacher.id, payload);
@@ -85,7 +95,9 @@ export function TeacherModal({ isOpen, onClose, onSuccess, teacher }: TeacherMod
       onClose();
       resetForm();
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Erro ao salvar professor');
+      console.error('Error saving teacher:', error);
+      const errorMessage = error.response?.data?.error || error.response?.data?.errors?.join(', ') || 'Erro ao salvar professor';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

@@ -8,8 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Save, BookOpen, Users, Calendar } from 'lucide-react';
-import { diaryApi } from '@/lib/api';
-import { studentApi } from '@/lib/api';
+import { diaryApi, teacherApi, classApi, subjectApi, academicTermApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 interface Teacher {
@@ -72,38 +71,156 @@ export default function NewDiaryPage() {
 
   const loadFormData = async () => {
     try {
-      // For now, we'll use mock data since we don't have these APIs yet
-      // In a real implementation, you'd load these from your APIs
-      setTeachers([
-        { id: 1, name: 'Prof. Maria Silva', email: 'maria@escola.com' },
-        { id: 2, name: 'Prof. João Santos', email: 'joao@escola.com' },
-        { id: 3, name: 'Prof. Ana Costa', email: 'ana@escola.com' },
-      ]);
+      setLoading(true);
+      console.log('🚀 Starting to load form data...');
+      
+      // Load data from real APIs with individual error handling
+      let teachersResponse, classesResponse, subjectsResponse, academicTermsResponse;
+      
+      try {
+        console.log('📞 Calling teacherApi.getAll()...');
+        teachersResponse = await teacherApi.getAll();
+        console.log('✅ teacherApi.getAll() response:', teachersResponse);
+      } catch (err) {
+        console.error('❌ teacherApi.getAll() failed:', err);
+        teachersResponse = { data: [] };
+      }
 
-      setSchoolClasses([
-        { id: 1, name: 'Infantil I', section: 'A' },
-        { id: 2, name: 'Infantil II', section: 'A' },
-        { id: 3, name: '1º Ano', section: 'A' },
-        { id: 4, name: '2º Ano', section: 'A' },
-      ]);
+      try {
+        console.log('📞 Calling classApi.getAll()...');
+        classesResponse = await classApi.getAll();
+        console.log('✅ classApi.getAll() response:', classesResponse);
+      } catch (err) {
+        console.error('❌ classApi.getAll() failed:', err);
+        classesResponse = { data: [] };
+      }
 
-      setSubjects([
-        { id: 1, name: 'Português', code: 'PORT' },
-        { id: 2, name: 'Matemática', code: 'MAT' },
-        { id: 3, name: 'Artes', code: 'ART' },
-        { id: 4, name: 'Educação Física', code: 'EDF' },
-      ]);
+      try {
+        console.log('📞 Calling subjectApi.getAll()...');
+        subjectsResponse = await subjectApi.getAll();
+        console.log('✅ subjectApi.getAll() response:', subjectsResponse);
+      } catch (err) {
+        console.error('❌ subjectApi.getAll() failed:', err);
+        subjectsResponse = { data: [] };
+      }
 
-      setAcademicTerms([
-        { id: 1, name: '1º Bimestre 2024', year: 2024 },
-        { id: 2, name: '2º Bimestre 2024', year: 2024 },
-        { id: 3, name: '3º Bimestre 2024', year: 2024 },
-        { id: 4, name: '4º Bimestre 2024', year: 2024 },
-      ]);
+      try {
+        console.log('📞 Calling academicTermApi.getAll()...');
+        academicTermsResponse = await academicTermApi.getAll();
+        console.log('✅ academicTermApi.getAll() response:', academicTermsResponse);
+      } catch (err) {
+        console.error('❌ academicTermApi.getAll() failed:', err);
+        academicTermsResponse = { data: [] };
+      }
+
+      console.log('✅ All API calls completed');
+      console.log('🧪 DEBUG - Full API Responses:', {
+        teachers: {
+          status: teachersResponse?.status,
+          data: teachersResponse?.data,
+          dataType: Array.isArray(teachersResponse?.data) ? 'Array' : typeof teachersResponse?.data,
+          length: teachersResponse?.data?.length
+        },
+        classes: {
+          status: classesResponse?.status,
+          data: classesResponse?.data,
+          dataType: Array.isArray(classesResponse?.data) ? 'Array' : typeof classesResponse?.data,
+          length: classesResponse?.data?.length
+        },
+        subjects: {
+          status: subjectsResponse?.status,
+          data: subjectsResponse?.data,
+          dataType: Array.isArray(subjectsResponse?.data) ? 'Array' : typeof subjectsResponse?.data,
+          length: subjectsResponse?.data?.length
+        },
+        terms: {
+          status: academicTermsResponse?.status,
+          data: academicTermsResponse?.data,
+          dataType: Array.isArray(academicTermsResponse?.data) ? 'Array' : typeof academicTermsResponse?.data,
+          length: academicTermsResponse?.data?.length
+        }
+      });
+
+      // Safe transformation with detailed debugging
+      const teachersData = (teachersResponse?.data || []).map((teacher: any) => {
+        console.log('🐛 DEBUG - Raw teacher data:', teacher);
+        const transformed = {
+          id: teacher.id,
+          name: teacher.user?.name || teacher.name || 'Professor',
+          email: teacher.user?.email || teacher.email || ''
+        };
+        console.log('🔄 DEBUG - Transformed teacher:', transformed);
+        return transformed;
+      });
+
+      const classesData = (classesResponse?.data || []).map((schoolClass: any) => {
+        console.log('🐛 DEBUG - Raw class data:', schoolClass);
+        const transformed = {
+          id: schoolClass.id,
+          name: schoolClass.name || `Turma ${schoolClass.id}`,
+          section: schoolClass.section || ''
+        };
+        console.log('🔄 DEBUG - Transformed class:', transformed);
+        return transformed;
+      });
+
+      const subjectsData = (subjectsResponse?.data || []).map((subject: any) => {
+        console.log('🐛 DEBUG - Raw subject data:', subject);
+        const transformed = {
+          id: subject.id,
+          name: subject.name || 'Matéria',
+          code: subject.code || subject.name?.substring(0, 3).toUpperCase() || 'MAT'
+        };
+        console.log('🔄 DEBUG - Transformed subject:', transformed);
+        return transformed;
+      });
+
+      const academicTermsData = (academicTermsResponse?.data || []).map((term: any) => {
+        console.log('🐛 DEBUG - Raw term data:', term);
+        const transformed = {
+          id: term.id,
+          name: term.name || `Período ${term.id}`,
+          year: term.year || new Date().getFullYear()
+        };
+        console.log('🔄 DEBUG - Transformed term:', transformed);
+        return transformed;
+      });
+
+      console.log('🔄 Final transformed data:', {
+        teachersData,
+        classesData,
+        subjectsData,
+        academicTermsData
+      });
+
+      setTeachers(teachersData);
+      setSchoolClasses(classesData);
+      setSubjects(subjectsData);
+      setAcademicTerms(academicTermsData);
+
+      console.log('📊 Form data loaded successfully:', {
+        teachers: teachersData.length,
+        classes: classesData.length,
+        subjects: subjectsData.length,
+        terms: academicTermsData.length
+      });
 
     } catch (error) {
-      console.error('Error loading form data:', error);
+      console.error('❌ Error loading form data:', error);
+      console.error('❌ Error details:', {
+        message: error?.message,
+        response: error?.response,
+        status: error?.response?.status,
+        data: error?.response?.data
+      });
       toast.error('Erro ao carregar dados do formulário');
+      
+      // Fallback to empty arrays
+      console.log('⚠️ Setting fallback empty arrays for all form data');
+      setTeachers([]);
+      setSchoolClasses([]);
+      setSubjects([]);
+      setAcademicTerms([]);
     } finally {
       setLoading(false);
     }

@@ -144,10 +144,10 @@ export default function ReportsPage() {
       
       toast.success('Gerando resumo mensal...');
       
-      // Criar um resumo combinando diferentes dados
+      // Criar um resumo combinando dados reais das APIs
       const monthName = now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
       
-      // Generate PDF with monthly summary data
+      // Generate PDF with real data from loaded APIs
       const reportData = {
         title: `Resumo Mensal - ${monthName}`,
         period: { 
@@ -155,12 +155,15 @@ export default function ReportsPage() {
           end: endOfMonth 
         },
         summary: {
-          totalStudents: classes.length > 0 ? classes.length * 20 : 150, // Mock data
-          totalClasses: classes.length || 8,
-          averageAttendance: 92, // Mock percentage
-          totalGrades: classes.length > 0 ? classes.length * 15 : 120 // Mock data
+          totalStudents: classes.reduce((total, cls) => total + (cls.studentsCount || 0), 0) || 0,
+          totalClasses: classes.length,
+          averageAttendance: 0, // We don't have attendance API data loaded here
+          totalGrades: 0 // We don't have grades API data loaded here
         }
       };
+
+      // Add note about limited data availability
+      console.log('📊 Dados do resumo mensal:', reportData);
       
       // Generate and download PDF
       try {
@@ -168,7 +171,7 @@ export default function ReportsPage() {
         toast.success(`Resumo mensal de ${monthName} exportado para PDF!`);
       } catch (pdfError) {
         console.error('Erro ao gerar PDF:', pdfError);
-        toast.success(`Resumo de ${monthName} preparado!`);
+        toast.error('Erro ao gerar PDF do resumo mensal');
       }
       
     } catch (error) {
@@ -216,17 +219,16 @@ export default function ReportsPage() {
                 {report.description}
               </p>
               <div className="mt-4 flex items-center gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="text-xs"
-                  asChild
-                >
-                  <Link href={report.href}>
+                <Link href={report.href}>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="text-xs"
+                  >
                     <Eye className="w-4 h-4 mr-1" />
                     Visualizar
-                  </Link>
-                </Button>
+                  </Button>
+                </Link>
               </div>
             </CardContent>
           </Card>

@@ -64,8 +64,14 @@ export const studentApi = {
 export const teacherApi = {
   getAll: (params?: any) => api.get<Teacher[]>('/teachers', { params }),
   getById: (id: number) => api.get<Teacher>(`/teachers/${id}`),
-  create: (data: any) => api.post<Teacher>('/teachers', data),
-  update: (id: number, data: any) => api.put<Teacher>(`/teachers/${id}`, data),
+  create: (data: any) => {
+    console.log("🐛 DEBUG - teacherApi.create payload:", { teacher: data });
+    return api.post<Teacher>('/teachers', { teacher: data });
+  },
+  update: (id: number, data: any) => {
+    console.log("🐛 DEBUG - teacherApi.update payload para ID", id, ":", { teacher: data });
+    return api.put<Teacher>(`/teachers/${id}`, { teacher: data });
+  },
   delete: (id: number) => api.delete(`/teachers/${id}`),
 };
 
