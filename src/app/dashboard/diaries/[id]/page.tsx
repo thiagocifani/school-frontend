@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { diaryApi, gradeApi } from '@/lib/api';
 import { Diary, DiaryStudent, DiaryStatistics } from '@/types/diary';
+import { OccurrenceModal } from '@/components/teacher/occurrence-modal';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 
@@ -33,6 +34,8 @@ export default function DiaryDetailsPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showNewLessonModal, setShowNewLessonModal] = useState(false);
   const [showNewGradeModal, setShowNewGradeModal] = useState(false);
+  const [showOccurrenceModal, setShowOccurrenceModal] = useState(false);
+  const [selectedLessonForOccurrence, setSelectedLessonForOccurrence] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [savingLesson, setSavingLesson] = useState(false);
   const [savingGrade, setSavingGrade] = useState(false);
@@ -287,6 +290,19 @@ export default function DiaryDetailsPage() {
     });
   };
 
+  const handleOpenOccurrenceModal = (lesson: any) => {
+    setSelectedLessonForOccurrence(lesson);
+    setShowOccurrenceModal(true);
+  };
+
+  const handleOccurrenceSuccess = async () => {
+    setShowOccurrenceModal(false);
+    setSelectedLessonForOccurrence(null);
+    toast.success('Ocorrência registrada com sucesso!');
+    // Reload diary data to refresh any occurrence counts
+    await loadDiaryData();
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto px-6">
@@ -425,6 +441,7 @@ export default function DiaryDetailsPage() {
           <TabsTrigger value="lessons" className="text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900">Aulas</TabsTrigger>
           <TabsTrigger value="students" className="text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900">Alunos</TabsTrigger>
           <TabsTrigger value="grades" className="text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900">Notas</TabsTrigger>
+          <TabsTrigger value="occurrences" className="text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900">Ocorrências</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -589,6 +606,15 @@ export default function DiaryDetailsPage() {
                           >
                             <Users className="h-4 w-4" />
                           </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleOpenOccurrenceModal(lesson)}
+                            className="h-8 w-8 p-0 hover:bg-orange-50 text-orange-600 hover:text-orange-700"
+                            title="Registrar ocorrência"
+                          >
+                            <AlertTriangle className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -741,6 +767,91 @@ export default function DiaryDetailsPage() {
                     <Plus className="h-4 w-4 mr-2" />
                     Lançar Primeira Nota
                   </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="occurrences">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold text-gray-900">Ocorrências do Diário</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {diary?.lessons && diary.lessons.some((lesson: any) => lesson.occurrences && lesson.occurrences.length > 0) ? (
+                <div className="space-y-4">
+                  {diary.lessons.map((lesson: any) => 
+                    lesson.occurrences && lesson.occurrences.length > 0 ? (
+                      <div key={lesson.id}>
+                        <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                          <h4 className="font-medium text-gray-900 mb-1">
+                            Aula: {lesson.topic}
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            {new Date(lesson.date).toLocaleDateString('pt-BR')}
+                          </p>
+                        </div>
+                        <div className="space-y-3 ml-4">
+                          {lesson.occurrences.map((occurrence: any) => (
+                            <div key={occurrence.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-2">
+                                    <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
+                                      occurrence.severity === 'high' ? 'bg-red-600' :
+                                      occurrence.severity === 'medium' ? 'bg-yellow-600' : 'bg-green-600'
+                                    }`}>
+                                      <AlertTriangle className="h-4 w-4 text-white" />
+                                    </div>
+                                    <div>
+                                      <h4 className="font-medium text-gray-900">{occurrence.title}</h4>
+                                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                                        <span className="font-medium">{occurrence.student.name}</span>
+                                        <Badge variant="outline" className={
+                                          occurrence.occurrenceType === 'disciplinary' ? 'border-red-300 text-red-700' :
+                                          occurrence.occurrenceType === 'medical' ? 'border-blue-300 text-blue-700' :
+                                          occurrence.occurrenceType === 'positive' ? 'border-green-300 text-green-700' :
+                                          'border-gray-300 text-gray-700'
+                                        }>
+                                          {occurrence.occurrenceType === 'disciplinary' ? 'Disciplinar' :
+                                           occurrence.occurrenceType === 'medical' ? 'Médica' :
+                                           occurrence.occurrenceType === 'positive' ? 'Positiva' : 'Outra'}
+                                        </Badge>
+                                        <Badge className={
+                                          occurrence.severity === 'high' ? 'bg-red-100 text-red-800' :
+                                          occurrence.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                          'bg-green-100 text-green-800'
+                                        }>
+                                          {occurrence.severity === 'high' ? 'Grave' :
+                                           occurrence.severity === 'medium' ? 'Moderada' : 'Leve'}
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  {occurrence.description && (
+                                    <p className="text-sm text-gray-600 mt-2">
+                                      {occurrence.description}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <AlertTriangle className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                  <p className="text-gray-500 mb-4">
+                    Nenhuma ocorrência registrada ainda
+                  </p>
+                  <p className="text-sm text-gray-400">
+                    As ocorrências aparecerão aqui quando forem registradas durante as aulas
+                  </p>
                 </div>
               )}
             </CardContent>
@@ -1099,6 +1210,14 @@ export default function DiaryDetailsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Occurrence Modal */}
+      <OccurrenceModal 
+        isOpen={showOccurrenceModal}
+        onClose={() => setShowOccurrenceModal(false)}
+        students={students}
+        onSuccess={handleOccurrenceSuccess}
+      />
     </div>
   );
 }

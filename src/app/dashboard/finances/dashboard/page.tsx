@@ -471,9 +471,9 @@ export default function FinancialDashboardUnified() {
                   <BarChart
                     data={[{
                       name: `${String(month).padStart(2, '0')}/${year}`,
-                      receitas: monthIncome.reduce((s, t) => s + (t.final_amount ?? t.amount ?? 0), 0),
-                      despesas: monthExpenses.reduce((s, t) => s + (t.final_amount ?? t.amount ?? 0), 0),
-                      liquido: monthIncome.reduce((s, t) => s + (t.final_amount ?? t.amount ?? 0), 0) - monthExpenses.reduce((s, t) => s + (t.final_amount ?? t.amount ?? 0), 0),
+                      receitas: monthIncome.reduce((s, t) => s + (Number(t.final_amount) || Number(t.amount) || 0), 0),
+                      despesas: monthExpenses.reduce((s, t) => s + (Number(t.final_amount) || Number(t.amount) || 0), 0),
+                      liquido: monthIncome.reduce((s, t) => s + (Number(t.final_amount) || Number(t.amount) || 0), 0) - monthExpenses.reduce((s, t) => s + (Number(t.final_amount) || Number(t.amount) || 0), 0),
                     }]}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
@@ -494,7 +494,7 @@ export default function FinancialDashboardUnified() {
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-semibold">Receitas do Mês</h3>
                     <Badge className="bg-green-100 text-green-800">
-                      Total R$ {monthIncome.reduce((s, t) => s + (t.final_amount ?? t.amount ?? 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      Total R$ {monthIncome.reduce((s, t) => s + (Number(t.final_amount) || Number(t.amount) || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </Badge>
                   </div>
                   <div className="space-y-3">
@@ -505,7 +505,7 @@ export default function FinancialDashboardUnified() {
                           <div className="text-xs text-gray-500">Venc. {t.dueDate ? new Date(t.dueDate).toLocaleDateString('pt-BR') : '-'}</div>
                         </div>
                         <div className="text-right">
-                          <div className="font-bold text-green-600">{t.formattedFinalAmount || `R$ ${(t.final_amount ?? t.amount ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}</div>
+                          <div className="font-bold text-green-600">{t.formattedFinalAmount || `R$ ${(Number(t.final_amount) || Number(t.amount) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}</div>
                           <Badge variant="outline" className="text-xs">{t.status}</Badge>
                         </div>
                       </div>
@@ -520,7 +520,7 @@ export default function FinancialDashboardUnified() {
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-semibold">Despesas do Mês</h3>
                     <Badge className="bg-red-100 text-red-800">
-                      Total R$ {monthExpenses.reduce((s, t) => s + (t.final_amount ?? t.amount ?? 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      Total R$ {monthExpenses.reduce((s, t) => s + (Number(t.final_amount) || Number(t.amount) || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </Badge>
                   </div>
                   <div className="space-y-3">
@@ -531,7 +531,7 @@ export default function FinancialDashboardUnified() {
                           <div className="text-xs text-gray-500">Venc. {t.dueDate ? new Date(t.dueDate).toLocaleDateString('pt-BR') : '-'}</div>
                         </div>
                         <div className="text-right">
-                          <div className="font-bold text-red-600">{t.formattedFinalAmount || `R$ ${(t.final_amount ?? t.amount ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}</div>
+                          <div className="font-bold text-red-600">{t.formattedFinalAmount || `R$ ${(Number(t.final_amount) || Number(t.amount) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}</div>
                           <Badge variant="outline" className="text-xs">{t.status}</Badge>
                         </div>
                       </div>
@@ -569,170 +569,6 @@ export default function FinancialDashboardUnified() {
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* Summary */}
-      {summary && (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <ResponsiveCard>
-            <ResponsiveCardHeader className="pb-2"><ResponsiveCardTitle className="flex items-center gap-2"><GraduationCap className="h-4 w-4" /> A Receber</ResponsiveCardTitle></ResponsiveCardHeader>
-          <ResponsiveCardContent>
-              <div className="text-2xl sm:text-3xl font-bold text-green-600">R$ {summary.receivables.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-              <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Pago: R$ {summary.receivables.paid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-          </ResponsiveCardContent>
-        </ResponsiveCard>
-        <ResponsiveCard>
-            <ResponsiveCardHeader className="pb-2"><ResponsiveCardTitle className="flex items-center gap-2"><Users className="h-4 w-4" /> A Pagar</ResponsiveCardTitle></ResponsiveCardHeader>
-          <ResponsiveCardContent>
-              <div className="text-2xl sm:text-3xl font-bold text-red-600">R$ {summary.payables.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-              <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Pago: R$ {summary.payables.paid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-          </ResponsiveCardContent>
-        </ResponsiveCard>
-        <ResponsiveCard>
-            <ResponsiveCardHeader className="pb-2"><ResponsiveCardTitle className="flex items-center gap-2"><DollarSign className="h-4 w-4" /> Fluxo Líquido</ResponsiveCardTitle></ResponsiveCardHeader>
-          <ResponsiveCardContent>
-              <div className={`text-2xl sm:text-3xl font-bold ${summary.net_flow >= 0 ? 'text-blue-600' : 'text-red-600'}`}>R$ {summary.net_flow.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-              <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>{summary.transactions_count} transações</p>
-          </ResponsiveCardContent>
-        </ResponsiveCard>
-        <ResponsiveCard>
-            <ResponsiveCardHeader className="pb-2"><ResponsiveCardTitle className="flex items-center gap-2"><Filter className="h-4 w-4" /> Período</ResponsiveCardTitle></ResponsiveCardHeader>
-          <ResponsiveCardContent>
-              <div className="text-sm" style={{ color: 'var(--muted-foreground)' }}>{startDate} • {endDate}</div>
-          </ResponsiveCardContent>
-        </ResponsiveCard>
-      </div>
-      )}
-
-      
-
-      {/* Monthly Chart + Lists */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Resumo Mensal</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Mês</label>
-              <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 12 }).map((_, i) => (
-                    <SelectItem key={i + 1} value={String(i + 1)}>{String(i + 1).padStart(2, '0')}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Ano</label>
-              <Input type="number" value={year} onChange={(e) => setYear(Number(e.target.value || new Date().getFullYear()))} />
-            </div>
-          </div>
-          
-          {/* Chart */}
-          <div className="w-full">
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart
-                data={[{
-                  name: `${String(month).padStart(2, '0')}/${year}`,
-                  receitas: monthIncome.reduce((s, t) => s + (t.final_amount ?? t.amount ?? 0), 0),
-                  despesas: monthExpenses.reduce((s, t) => s + (t.final_amount ?? t.amount ?? 0), 0),
-                  liquido: monthIncome.reduce((s, t) => s + (t.final_amount ?? t.amount ?? 0), 0) - monthExpenses.reduce((s, t) => s + (t.final_amount ?? t.amount ?? 0), 0),
-                }]}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip formatter={(value: any) => `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
-                <Legend />
-                <Bar dataKey="receitas" name="Receitas" fill="#10b981" />
-                <Bar dataKey="despesas" name="Despesas" fill="#ef4444" />
-                <Bar dataKey="liquido" name="Líquido" fill="#3b82f6" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Lists */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold">Receitas do Mês</h3>
-                <Badge className="bg-green-100 text-green-800">
-                  Total R$ {monthIncome.reduce((s, t) => s + (t.final_amount ?? t.amount ?? 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </Badge>
-              </div>
-            <div className="space-y-3">
-                {monthIncome.slice(0, 10).map((t) => (
-                  <div key={t.id} className="p-3 border rounded-md flex items-center justify-between">
-                  <div>
-                      <div className="font-medium">{t.description}</div>
-                      <div className="text-xs text-gray-500">Venc. {t.dueDate ? new Date(t.dueDate).toLocaleDateString('pt-BR') : '-'}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-bold text-green-600">{t.formattedFinalAmount || `R$ ${(t.final_amount ?? t.amount ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}</div>
-                      <Badge variant="outline" className="text-xs">{t.status}</Badge>
-                    </div>
-                  </div>
-                ))}
-                {monthIncome.length === 0 && (
-                  <div className="text-sm text-gray-500">Sem receitas neste mês.</div>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold">Despesas do Mês</h3>
-                <Badge className="bg-red-100 text-red-800">
-                  Total R$ {monthExpenses.reduce((s, t) => s + (t.final_amount ?? t.amount ?? 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </Badge>
-              </div>
-              <div className="space-y-3">
-                {monthExpenses.slice(0, 10).map((t) => (
-                  <div key={t.id} className="p-3 border rounded-md flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">{t.description}</div>
-                      <div className="text-xs text-gray-500">Venc. {t.dueDate ? new Date(t.dueDate).toLocaleDateString('pt-BR') : '-'}</div>
-                  </div>
-                  <div className="text-right">
-                      <div className="font-bold text-red-600">{t.formattedFinalAmount || `R$ ${(t.final_amount ?? t.amount ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}</div>
-                      <Badge variant="outline" className="text-xs">{t.status}</Badge>
-                    </div>
-                  </div>
-                ))}
-                {monthExpenses.length === 0 && (
-                  <div className="text-sm text-gray-500">Sem despesas neste mês.</div>
-                )}
-                </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Daily snapshot list */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Resumo Diário</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {dailyBreakdown.slice(0, 9).map((d) => (
-              <div key={d.date} className="p-3 border rounded-md flex items-center justify-between">
-                <div>
-                  <div className="text-sm text-gray-600">{d.date}</div>
-                  <div className="text-xs text-gray-500">Receb.: R$ {d.receivablesPaid.toLocaleString('pt-BR')}</div>
-            </div>
-                <div className="text-right">
-                  <div className="text-xs text-gray-500">Pag.: R$ {d.payablesPaid.toLocaleString('pt-BR')}</div>
-                  <div className={`text-sm font-medium ${d.netFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>Líquido: R$ {d.netFlow.toLocaleString('pt-BR')}</div>
-            </div>
-            </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

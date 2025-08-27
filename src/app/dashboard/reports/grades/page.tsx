@@ -47,17 +47,24 @@ export default function GradesReportsPage() {
 
   const loadInitialData = async () => {
     try {
+      console.log('🔄 Carregando dados iniciais...');
       const [classesRes, subjectsRes, termsRes] = await Promise.all([
         classApi.getAll(),
         subjectApi.getAll(),
         academicTermApi.getAll()
       ]);
       
+      console.log('📊 Classes recebidas:', classesRes.data);
+      console.log('📚 Subjects recebidas:', subjectsRes.data);
+      console.log('📅 Terms recebidos:', termsRes.data);
+      
       setClasses(classesRes.data);
       setSubjects(subjectsRes.data);
       setAcademicTerms(termsRes.data);
+      
+      console.log('✅ Dados carregados - Classes no state:', classesRes.data);
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
+      console.error('❌ Erro ao carregar dados:', error);
       toast.error('Erro ao carregar dados iniciais');
     }
   };
@@ -413,11 +420,15 @@ export default function GradesReportsPage() {
                   <SelectValue placeholder="Selecione uma turma" />
                 </SelectTrigger>
                 <SelectContent>
-                  {classes.map(schoolClass => (
-                    <SelectItem key={schoolClass.id} value={schoolClass.id.toString()}>
-                      {schoolClass.name}
-                    </SelectItem>
-                  ))}
+                  {console.log('🎯 Renderizando dropdown - Classes disponíveis:', classes.length, classes)}
+                  {classes.map(schoolClass => {
+                    console.log('🔍 Renderizando classe:', schoolClass);
+                    return (
+                      <SelectItem key={schoolClass.id} value={schoolClass.id.toString()}>
+                        {schoolClass.name}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
