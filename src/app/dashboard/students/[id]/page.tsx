@@ -134,22 +134,60 @@ export default function StudentDetailsPage() {
       const { data: studentData } = await studentApi.getById(Number(studentId));
       setStudent(studentData);
 
-      // Carregar matérias do aluno - endpoint customizado não existe, então vamos usar dados do aluno
-      setSubjects([]); // Por enquanto vazio, precisaremos implementar no backend
+      // Carregar matérias do aluno a partir da turma
+      try {
+        if (studentData?.school_class?.id) {
+          const classId = studentData.school_class.id;
+          // Reutiliza classes API via fetch direto
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/classes/${classId}`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` }
+          });
+          if (res.ok) {
+            const classData = await res.json();
+            const classSubjects = (classData?.subjects || []).map((cs: any) => ({
+              id: cs?.subject?.id || cs?.id,
+              name: cs?.subject?.name || 'Matéria',
+              teacher: { user: { name: cs?.teacher?.user?.name || 'Professor' } }
+            }));
+            setSubjects(classSubjects);
+          } else {
+            setSubjects([]);
+          }
+        } else {
+          setSubjects([]);
+        }
+      } catch (e) {
+        setSubjects([]);
+      }
 
-      // Carregar presenças
+      // Carregar presenças (normalizando para conter subject.name)
       try {
         const { data: attendancesData } = await attendanceApi.getAll({ student_id: studentId });
-        setAttendances(attendancesData || []);
+        const normalized = (attendancesData || []).map((a: any) => ({
+          id: a.id,
+          date: a.lesson?.date || a.date,
+          status: a.status,
+          subject: { name: a.lesson?.subject || a.subject?.name || 'Matéria' },
+          observation: a.observation,
+        }));
+        setAttendances(normalized);
       } catch (error) {
         console.log('Attendances data not available');
         setAttendances([]);
       }
 
-      // Carregar notas
+      // Carregar notas (normalizando para conter subject.name e grade_type)
       try {
         const { data: gradesData } = await gradeApi.getAll({ student_id: studentId });
-        setGrades(gradesData || []);
+        const normalized = (gradesData || []).map((g: any) => ({
+          id: g.id,
+          value: g.value,
+          grade_type: g.grade_type || g.gradeType,
+          date: g.date,
+          subject: { name: g.subject?.name || g.diary?.subject?.name || 'Matéria' },
+          observation: g.observation,
+        }));
+        setGrades(normalized);
       } catch (error) {
         console.log('Grades data not available');
         setGrades([]);

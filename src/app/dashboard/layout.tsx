@@ -32,7 +32,6 @@ const navigation = [
   { name: 'Séries', href: '/dashboard/grade-levels', icon: GraduationCap },
   { name: 'Disciplinas', href: '/dashboard/subjects', icon: BookOpen },
   { name: 'Financeiro', href: '/dashboard/finances/dashboard', icon: DollarSign },
-  { name: 'Fluxo de Caixa', href: '/dashboard/finances/cash-flow', icon: TrendingUp },
   { name: 'Relatórios', href: '/dashboard/reports', icon: FileText },
 ];
 

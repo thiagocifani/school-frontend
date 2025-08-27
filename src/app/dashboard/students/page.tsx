@@ -85,7 +85,10 @@ export default function StudentsPage() {
       key: 'registrationNumber',
       label: 'Matrícula',
       priority: 3,
-      render: (value: string) => value || 'N/A'
+      render: (_value: string, student: Student) => {
+        const reg = (student as any).registrationNumber || (student as any).registration_number;
+        return reg || 'N/A';
+      }
     },
     {
       key: 'schoolClass',
