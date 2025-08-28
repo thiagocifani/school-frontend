@@ -187,21 +187,21 @@ export default function DiaryLessonsPage() {
   return (
     <div className="container mx-auto px-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between mb-8">
         <div className="flex items-center gap-4">
           <Button variant="ghost" onClick={() => router.back()}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Aulas - {diary.name}</h1>
-            <p className="text-gray-600">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Aulas - {diary.name}</h1>
+            <p className="text-sm sm:text-base text-gray-600">
               {diary.schoolClass.name} {diary.schoolClass.section} • {diary.subject.name}
             </p>
           </div>
         </div>
         <Button 
           onClick={handleNewLesson}
-          className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 hover:text-indigo-800 border border-indigo-300 cursor-pointer"
+          className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 hover:text-indigo-800 border border-indigo-300 cursor-pointer w-full sm:w-auto"
         >
           <Plus className="h-4 w-4 mr-2" />
           Nova Aula
@@ -318,7 +318,8 @@ export default function DiaryLessonsPage() {
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-2">
+                    {/* Desktop Actions */}
+                    <div className="hidden lg:flex items-center gap-2">
                       {lesson.status === 'planned' && (
                         <Button
                           size="sm"
@@ -371,6 +372,47 @@ export default function DiaryLessonsPage() {
                       >
                         <Edit className="h-4 w-4 mr-1" />
                         Editar
+                      </Button>
+                    </div>
+                    
+                    {/* Mobile Actions - Primary actions only, icons only */}
+                    <div className="flex lg:hidden items-center gap-1">
+                      {lesson.status === 'planned' && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleCompleteLesson(lesson.id)}
+                          variant="outline"
+                          className="border-green-600 text-green-600 hover:bg-green-50 p-2"
+                        >
+                          <Play className="h-4 w-4" />
+                        </Button>
+                      )}
+                      
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => router.push(`/dashboard/diaries/${diaryId}/lessons/${lesson.id}/attendance`)}
+                        className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 p-2"
+                      >
+                        <UserCheck className="h-4 w-4" />
+                      </Button>
+                      
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => router.push(`/dashboard/diaries/${diaryId}/lessons/${lesson.id}`)}
+                        className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 p-2"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => router.push(`/dashboard/diaries/${diaryId}/lessons/${lesson.id}/edit`)}
+                        className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 p-2"
+                      >
+                        <Edit className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>

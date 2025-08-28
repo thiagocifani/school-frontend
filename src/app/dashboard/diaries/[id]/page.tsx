@@ -340,94 +340,102 @@ export default function DiaryDetailsPage() {
 
   return (
     <div className="container mx-auto px-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => router.back()}>
+      {/* Header - Responsivo para mobile */}
+      <div className="flex flex-col gap-4 mb-8 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-4">
+          <Button variant="ghost" onClick={() => router.back()} className="mt-1 sm:mt-0">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">{diary.name}</h1>
-            <p className="text-gray-600">
-              {diary.schoolClass.name} {diary.schoolClass.section} • Prof. {diary.teacher.name}
-            </p>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words leading-tight">
+              {diary.name}
+            </h1>
+            <div className="mt-1 text-sm sm:text-base">
+              <p className="text-gray-600 break-words">
+                <span className="block sm:inline">{diary.schoolClass.name} {diary.schoolClass.section}</span>
+                <span className="hidden sm:inline mx-2">•</span>
+                <span className="block sm:inline">Prof. {diary.teacher.name}</span>
+              </p>
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-end gap-2 flex-shrink-0">
           <Badge className={getStatusColor(diary.status)}>
             {getStatusLabel(diary.status)}
           </Badge>
           <Button 
             variant="outline" 
+            size="sm"
             className="border-indigo-600 text-indigo-600 hover:bg-indigo-50 cursor-pointer"
             onClick={handleEditClick}
           >
-            <Edit className="h-4 w-4 mr-2" />
-            Editar
+            <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Editar</span>
+            <span className="sm:hidden">Edit</span>
           </Button>
         </div>
       </div>
 
-      {/* Statistics Cards */}
+      {/* Statistics Cards - Responsivo para mobile */}
       {statistics && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-700">Total de Aulas</p>
-                  <p className="text-3xl font-bold text-gray-900">{statistics.totalLessons}</p>
-                  <p className="text-xs text-gray-500">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-start sm:items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs sm:text-sm font-medium text-gray-700 break-words leading-tight">Total de Aulas</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">{statistics.totalLessons}</p>
+                  <p className="text-xs text-gray-500 break-words">
                     {statistics.completedLessons} concluídas
                   </p>
                 </div>
-                <BookOpen className="h-8 w-8 text-indigo-600" />
+                <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-indigo-600 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-700">Alunos</p>
-                  <p className="text-3xl font-bold text-gray-900">{statistics.totalStudents}</p>
-                  <p className="text-xs text-gray-500">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-start sm:items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs sm:text-sm font-medium text-gray-700 break-words leading-tight">Alunos</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">{statistics.totalStudents}</p>
+                  <p className="text-xs text-gray-500 break-words">
                     {statistics.averageAttendance}% presença média
                   </p>
                 </div>
-                <Users className="h-8 w-8 text-green-600" />
+                <Users className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-700">Notas</p>
-                  <p className="text-3xl font-bold text-gray-900">{statistics.gradesCount}</p>
-                  <p className="text-xs text-gray-500">notas lançadas</p>
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-start sm:items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs sm:text-sm font-medium text-gray-700 break-words leading-tight">Notas</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">{statistics.gradesCount}</p>
+                  <p className="text-xs text-gray-500 break-words">notas lançadas</p>
                 </div>
-                <GraduationCap className="h-8 w-8 text-blue-600" />
+                <GraduationCap className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-700">Progresso</p>
-                  <p className="text-3xl font-bold text-gray-900">{statistics.progressPercentage}%</p>
+          <Card className="sm:col-span-2 lg:col-span-1">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-start sm:items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs sm:text-sm font-medium text-gray-700 break-words leading-tight">Progresso</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">{statistics.progressPercentage}%</p>
                   <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                     <div 
-                      className="bg-indigo-600 h-2 rounded-full" 
+                      className="bg-indigo-600 h-2 rounded-full transition-all duration-300" 
                       style={{ width: `${statistics.progressPercentage}%` }}
                     ></div>
                   </div>
                 </div>
-                <TrendingUp className="h-8 w-8 text-purple-600" />
+                <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
@@ -436,13 +444,15 @@ export default function DiaryDetailsPage() {
 
       {/* Content Tabs */}
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="bg-gray-100">
-          <TabsTrigger value="overview" className="text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900">Visão Geral</TabsTrigger>
-          <TabsTrigger value="lessons" className="text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900">Aulas</TabsTrigger>
-          <TabsTrigger value="students" className="text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900">Alunos</TabsTrigger>
-          <TabsTrigger value="grades" className="text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900">Notas</TabsTrigger>
-          <TabsTrigger value="occurrences" className="text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900">Ocorrências</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+          <TabsList className="bg-gray-100 min-w-max flex-nowrap w-full md:w-auto">
+            <TabsTrigger value="overview" className="text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900 whitespace-nowrap">Visão Geral</TabsTrigger>
+            <TabsTrigger value="lessons" className="text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900 whitespace-nowrap">Aulas</TabsTrigger>
+            <TabsTrigger value="students" className="text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900 whitespace-nowrap">Alunos</TabsTrigger>
+            <TabsTrigger value="grades" className="text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900 whitespace-nowrap">Notas</TabsTrigger>
+            <TabsTrigger value="occurrences" className="text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900 whitespace-nowrap">Ocorrências</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="overview" className="space-y-4">
           <Card>

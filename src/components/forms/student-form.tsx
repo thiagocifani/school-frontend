@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { classApi } from "@/lib/api";
+import { classApi, adminApi } from "@/lib/api";
 import { 
   User, 
   MapPin, 
@@ -24,7 +24,9 @@ import {
   Plus,
   Trash2,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Search,
+  DollarSign
 } from "lucide-react";
 import type { Student, SchoolClass } from "@/types";
 
@@ -54,6 +56,8 @@ const guardianSchema = z.object({
   }, "CEP deve ter 8 dígitos"),
   emergencyPhone: z.string().optional().or(z.literal("")),
   relationship: z.string().min(1, "Relacionamento é obrigatório").trim(),
+  isFinancialResponsible: z.coerce.boolean().default(false),
+  password: z.string().optional().or(z.literal("")),
 });
 
 const studentSchema = z.object({
@@ -69,6 +73,8 @@ const studentSchema = z.object({
   }, "CPF deve ter exatamente 11 dígitos"),
   gender: z.enum(["male", "female", "other"]).default("male"),
   birthPlace: z.string().optional().or(z.literal("")),
+  // Financial information
+  tuitionDiscount: z.number().min(0, "Desconto deve ser um valor positivo").max(100, "Desconto não pode ser maior que 100%").default(0),
   // Medical and family information
   hasSiblingEnrolled: z.coerce.boolean().default(false),
   siblingName: z.string().optional().or(z.literal("")),
@@ -127,6 +133,43 @@ const studentSchema = z.object({
       message: "Detalhes da medicação específica são obrigatórios",
     });
   }
+  
+  // Financial responsibility validation
+  const financialGuardians = data.guardians.filter(guardian => guardian.isFinancialResponsible);
+  if (financialGuardians.length === 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["guardians"],
+      message: "Pelo menos um responsável deve ser marcado como responsável financeiro",
+    });
+  }
+  
+  if (financialGuardians.length > 1) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["guardians"],
+      message: "Apenas um responsável pode ser marcado como responsável financeiro",
+    });
+  }
+  
+  // Password validation for financial guardians
+  data.guardians.forEach((guardian, index) => {
+    if (guardian.isFinancialResponsible && (!guardian.password || guardian.password.trim() === "")) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["guardians", index, "password"],
+        message: "Senha é obrigatória para o responsável financeiro",
+      });
+    }
+    
+    if (guardian.isFinancialResponsible && guardian.password && guardian.password.length < 6) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["guardians", index, "password"],
+        message: "A senha deve ter pelo menos 6 caracteres",
+      });
+    }
+  });
 });
 
 type StudentFormData = z.infer<typeof studentSchema>;
@@ -148,6 +191,13 @@ export function StudentForm({
   const [loadingClasses, setLoadingClasses] = useState(false);
   const [currentTab, setCurrentTab] = useState("student");
   const [addressLoading, setAddressLoading] = useState<{[key: number]: boolean}>({});
+  const [guardianSearch, setGuardianSearch] = useState({
+    searching: false,
+    results: [] as any[],
+    searchTerm: "",
+    showResults: false
+  });
+
   const {
     register,
     handleSubmit,
@@ -195,6 +245,8 @@ export function StudentForm({
         zipCode: g.zipCode,
         emergencyPhone: g.emergencyPhone,
         relationship: g.relationship,
+        isFinancialResponsible: g.isFinancialResponsible || false,
+        password: g.password || "",
       })) || [
         {
           name: "",
@@ -211,10 +263,18 @@ export function StudentForm({
           zipCode: "",
           emergencyPhone: "",
           relationship: "",
+          isFinancialResponsible: false,
+          password: "",
         },
       ],
     },
   });
+
+  // Watch the sibling enrolled field to show guardian search when needed
+  const hasSiblingEnrolled = watch("hasSiblingEnrolled", false);
+  
+  // Watch guardians array to check financial responsibility status
+  const watchedGuardians = watch("guardians", []);
 
   const handleFormSubmit = (data: StudentFormData) => {
     console.log("🐛 DEBUG - Dados do formulário antes da formatação:", data);
@@ -247,6 +307,9 @@ export function StudentForm({
         birth_date: guardian.birthDate,
         marital_status: guardian.maritalStatus,
         zip_code: guardian.zipCode,
+        // Add financial responsibility fields
+        is_financial_responsible: guardian.isFinancialResponsible,
+        password: guardian.password || null,
         emergency_phone: guardian.emergencyPhone,
         _index: index,
       }))
@@ -437,7 +500,128 @@ export function StudentForm({
     return age;
   };
 
-  const studentBirthDate = watch('birthDate');
+  // Function to search for existing guardians by CPF
+  const searchGuardians = async (searchTerm: string) => {
+    console.log('🔍 Iniciando busca por responsáveis:', { searchTerm });
+
+    if (!searchTerm.trim() || searchTerm.length < 3) {
+      console.log('⚠️ Termo de busca muito curto ou vazio');
+      setGuardianSearch(prev => ({ ...prev, results: [], showResults: false }));
+      return;
+    }
+
+    setGuardianSearch(prev => ({ ...prev, searching: true, searchTerm }));
+    
+    try {
+      console.log('🚀 Fazendo chamada para API...');
+      
+      // Estratégia 1: Buscar por CPF formatado
+      let response;
+      const cleanCPF = searchTerm.replace(/\D/g, ''); // Remove formatação
+      
+      console.log('📞 Chamada 1: CPF formatado', { original: searchTerm, clean: cleanCPF });
+      response = await adminApi.guardians.getAll({ cpf: searchTerm });
+      console.log('📞 Resposta 1:', response);
+      
+      // Se não encontrou, tenta com CPF limpo
+      if (!response.data || response.data.length === 0) {
+        console.log('📞 Chamada 2: CPF limpo');
+        response = await adminApi.guardians.getAll({ cpf: cleanCPF });
+        console.log('📞 Resposta 2:', response);
+      }
+      
+      // Se ainda não encontrou, tenta busca genérica
+      if (!response.data || response.data.length === 0) {
+        console.log('📞 Chamada 3: Busca genérica');
+        response = await adminApi.guardians.getAll({ search: searchTerm });
+        console.log('📞 Resposta 3:', response);
+      }
+
+      // Processar dados da resposta
+      let guardians = [];
+      if (response && response.data) {
+        console.log('✅ Dados encontrados na API:', response.data);
+        
+        // Se data é um array
+        if (Array.isArray(response.data)) {
+          guardians = response.data;
+        }
+        // Se data tem propriedade guardians
+        else if (response.data.guardians && Array.isArray(response.data.guardians)) {
+          guardians = response.data.guardians;
+        }
+        // Se data é um objeto único
+        else if (response.data.id) {
+          guardians = [response.data];
+        }
+      }
+
+      // Filtro local adicional por CPF se necessário
+      if (guardians.length > 0 && cleanCPF.length >= 3) {
+        const filtered = guardians.filter(guardian => {
+          const guardianCPF = (guardian.user?.cpf || guardian.cpf || '').replace(/\D/g, '');
+          return guardianCPF.includes(cleanCPF);
+        });
+        if (filtered.length > 0) {
+          guardians = filtered;
+        }
+      }
+
+      console.log('🎯 Guardians processados para exibição:', guardians);
+      
+      setGuardianSearch(prev => ({
+        ...prev,
+        results: guardians,
+        showResults: true,
+        searching: false
+      }));
+      
+      console.log('🔄 Estado atualizado, showResults:', true, 'results:', guardians);
+      
+    } catch (error) {
+      console.error('❌ Erro na busca por responsáveis:', error);
+      setGuardianSearch(prev => ({ 
+        ...prev, 
+        results: [], 
+        showResults: false,
+        searching: false 
+      }));
+    }
+  };
+
+  // Function to select an existing guardian
+  const selectExistingGuardian = (guardian: any) => {
+    const existingGuardian = {
+      id: guardian.id,
+      name: guardian.user?.name || guardian.name,
+      email: guardian.user?.email || guardian.email,
+      phone: guardian.user?.phone || guardian.phone,
+      cpf: guardian.user?.cpf || guardian.cpf,
+      birthDate: guardian.birth_date || guardian.birthDate || "",
+      rg: guardian.rg || "",
+      profession: guardian.profession || "",
+      maritalStatus: guardian.marital_status || guardian.maritalStatus || "single",
+      address: guardian.address || "",
+      neighborhood: guardian.neighborhood || "",
+      complement: guardian.complement || "",
+      zipCode: guardian.zip_code || guardian.zipCode || "",
+      emergencyPhone: guardian.emergency_phone || guardian.emergencyPhone || "",
+      relationship: "", // This will need to be filled by user
+    };
+
+    // Add the selected guardian to the form
+    append(existingGuardian);
+    
+    // Clear search
+    setGuardianSearch({
+      searching: false,
+      results: [],
+      searchTerm: "",
+      showResults: false
+    });
+  };
+
+  const studentBirthDate = watch('birthDate', '');
   const studentAge = calculateAge(studentBirthDate);
 
   // Debug: Log form state changes
@@ -453,7 +637,7 @@ export function StudentForm({
   }, [errors, isValid, guardianFields.length, student]);
 
   // Debug: Log school class selection changes
-  const schoolClassIdValue = watch('schoolClassId');
+  const schoolClassIdValue = watch('schoolClassId', null);
   useEffect(() => {
     console.log('🔍 School Class Selection Changed:', {
       schoolClassIdValue,
@@ -497,7 +681,7 @@ export function StudentForm({
                 <TabsTrigger value="medical" className="flex items-center gap-2">
                   <AlertCircle className="h-4 w-4" />
                   Info. Médicas
-                  {(watch('hasSiblingEnrolled') || watch('hasSpecialistMonitoring') || watch('hasMedicationAllergy') || watch('hasFoodAllergy') || watch('hasMedicalTreatment') || watch('usesSpecificMedication')) && <CheckCircle className="h-3 w-3 text-green-600" />}
+                  {(watch('hasSiblingEnrolled', false) || watch('hasSpecialistMonitoring', false) || watch('hasMedicationAllergy', false) || watch('hasFoodAllergy', false) || watch('hasMedicalTreatment', false) || watch('usesSpecificMedication', false)) && <CheckCircle className="h-3 w-3 text-green-600" />}
                 </TabsTrigger>
                 <TabsTrigger value="guardians" className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
@@ -672,6 +856,36 @@ export function StudentForm({
                     </div>
 
                     <div>
+                      <label htmlFor="tuitionDiscount" className="block text-sm font-medium mb-2">
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="h-4 w-4" />
+                          Desconto na Mensalidade (%)
+                        </div>
+                      </label>
+                      <Input
+                        id="tuitionDiscount"
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        {...register("tuitionDiscount", {
+                          setValueAs: (value) => value === "" ? 0 : parseFloat(value)
+                        })}
+                        placeholder="0"
+                        className={errors.tuitionDiscount ? "border-red-500" : ""}
+                      />
+                      {errors.tuitionDiscount && (
+                        <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          {errors.tuitionDiscount.message}
+                        </p>
+                      )}
+                      <p className="text-gray-500 text-xs mt-1">
+                        Desconto aplicado na mensalidade (0-100%)
+                      </p>
+                    </div>
+
+                    <div>
                       <label htmlFor="status" className="block text-sm font-medium mb-2">
                         Status
                       </label>
@@ -725,23 +939,116 @@ export function StudentForm({
                         </label>
                       </div>
                       
-                      {watch('hasSiblingEnrolled') && (
-                        <div>
-                          <label htmlFor="siblingName" className="block text-sm font-medium mb-2">
-                            Nome do irmão *
-                          </label>
-                          <Input
-                            id="siblingName"
-                            {...register("siblingName")}
-                            placeholder="Nome completo do irmão"
-                            className={errors.siblingName ? "border-red-500" : ""}
-                          />
-                          {errors.siblingName && (
-                            <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                              <AlertCircle className="h-3 w-3" />
-                              {errors.siblingName.message}
+                      {watch('hasSiblingEnrolled', false) && (
+                        <div className="space-y-4">
+                          <div>
+                            <label htmlFor="siblingName" className="block text-sm font-medium mb-2">
+                              Nome do irmão *
+                            </label>
+                            <Input
+                              id="siblingName"
+                              {...register("siblingName")}
+                              placeholder="Nome completo do irmão"
+                              className={errors.siblingName ? "border-red-500" : ""}
+                            />
+                            {errors.siblingName && (
+                              <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                                <AlertCircle className="h-3 w-3" />
+                                {errors.siblingName.message}
+                              </p>
+                            )}
+                          </div>
+                          
+                          {/* Guardian Search Section */}
+                          <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                            <div className="flex items-center gap-2 mb-3">
+                              <Search className="h-4 w-4 text-blue-600" />
+                              <h4 className="text-sm font-medium text-blue-900">
+                                Buscar responsável já cadastrado
+                              </h4>
+                            </div>
+                            <p className="text-xs text-blue-700 mb-3">
+                              Como o aluno tem irmão matriculado, você pode buscar pelo CPF de um responsável já cadastrado para evitar duplicatas.
                             </p>
-                          )}
+                            
+                            <div className="space-y-3">
+                              <div className="relative">
+                                <Input
+                                  type="text"
+                                  placeholder="Digite o CPF do responsável (ex: 123.456.789-01)"
+                                  value={guardianSearch.searchTerm}
+                                  onChange={(e) => {
+                                    const cleanValue = e.target.value.replace(/\D/g, ''); // Remove non-digits
+                                    const formattedValue = formatCPF(cleanValue); // Format for display
+                                    setGuardianSearch(prev => ({ ...prev, searchTerm: formattedValue }));
+                                    searchGuardians(formattedValue); // Search with formatted CPF
+                                  }}
+                                  className="pl-10"
+                                />
+                                <Search className="h-4 w-4 text-gray-400 absolute left-3 top-3" />
+                                {guardianSearch.searching && (
+                                  <div className="absolute right-3 top-3">
+                                    <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {/* Search Results */}
+                              {guardianSearch.showResults && (
+                                <div className="mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md bg-white">
+                                  {guardianSearch.results.length > 0 ? (
+                                    <div className="divide-y">
+                                      {guardianSearch.results.map((guardian: any) => (
+                                        <div
+                                          key={guardian.id}
+                                          className="p-3 hover:bg-gray-50 cursor-pointer transition-colors"
+                                          onClick={() => selectExistingGuardian(guardian)}
+                                        >
+                                          <div className="flex items-center justify-between">
+                                            <div>
+                                              <p className="font-medium text-sm">
+                                                {guardian.user?.name || guardian.name}
+                                              </p>
+                                              <p className="text-xs text-gray-500">
+                                                CPF: {guardian.user?.cpf || guardian.cpf}
+                                              </p>
+                                              <p className="text-xs text-gray-500">
+                                                Email: {guardian.user?.email || guardian.email}
+                                              </p>
+                                            </div>
+                                            <Button
+                                              type="button"
+                                              size="sm"
+                                              className="text-xs"
+                                            >
+                                              <Plus className="h-3 w-3 mr-1" />
+                                              Adicionar
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div className="p-3 text-center text-sm text-gray-500">
+                                      {guardianSearch.searchTerm.length >= 3 ? 
+                                        "Nenhum responsável encontrado com este CPF" :
+                                        "Digite pelo menos 3 números do CPF para buscar"
+                                      }
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            
+                            {guardianFields.length > 0 && (
+                              <div className="mt-3 p-2 bg-green-50 rounded border border-green-200">
+                                <p className="text-xs text-green-700 flex items-center gap-1">
+                                  <CheckCircle className="h-3 w-3" />
+                                  {guardianFields.length} responsável(eis) adicionado(s). Você pode continuar adicionando mais ou prosseguir para a aba "Responsáveis" para completar os dados.
+                                </p>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -783,7 +1090,7 @@ export function StudentForm({
                         </label>
                       </div>
                       
-                      {watch('hasSpecialistMonitoring') && (
+                      {watch('hasSpecialistMonitoring', false) && (
                         <div>
                           <label htmlFor="specialistDetails" className="block text-sm font-medium mb-2">
                             Qual especialista e detalhes do acompanhamento? *
@@ -833,7 +1140,7 @@ export function StudentForm({
                         </label>
                       </div>
                       
-                      {watch('hasMedicationAllergy') && (
+                      {watch('hasMedicationAllergy', false) && (
                         <div>
                           <label htmlFor="medicationAllergyDetails" className="block text-sm font-medium mb-2">
                             Qual medicamento e tipo de reação? *
@@ -883,7 +1190,7 @@ export function StudentForm({
                         </label>
                       </div>
                       
-                      {watch('hasFoodAllergy') && (
+                      {watch('hasFoodAllergy', false) && (
                         <div>
                           <label htmlFor="foodAllergyDetails" className="block text-sm font-medium mb-2">
                             Qual alimento e tipo de reação? *
@@ -1282,6 +1589,48 @@ export function StudentForm({
                                 <option value="widowed">Viúvo(a)</option>
                               </select>
                             </div>
+
+                            {/* Financial Responsibility */}
+                            <div className="md:col-span-2">
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  id={`guardians.${index}.isFinancialResponsible`}
+                                  {...register(`guardians.${index}.isFinancialResponsible`)}
+                                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                />
+                                <label 
+                                  htmlFor={`guardians.${index}.isFinancialResponsible`}
+                                  className="text-sm font-medium cursor-pointer"
+                                >
+                                  É o responsável financeiro do aluno
+                                </label>
+                              </div>
+                            </div>
+
+                            {/* Password field - only show if this guardian is financial responsible */}
+                            {watchedGuardians[index]?.isFinancialResponsible && (
+                              <div className="md:col-span-2">
+                                <label className="block text-sm font-medium mb-2">
+                                  Senha para acesso ao dashboard *
+                                </label>
+                                <Input
+                                  type="password"
+                                  {...register(`guardians.${index}.password`)}
+                                  placeholder="Crie uma senha para acesso ao sistema"
+                                  className={errors.guardians?.[index]?.password ? "border-red-500" : ""}
+                                />
+                                {errors.guardians?.[index]?.password && (
+                                  <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                                    <AlertCircle className="h-4 w-4" />
+                                    {errors.guardians[index]?.password?.message}
+                                  </p>
+                                )}
+                                <p className="text-gray-500 text-xs mt-1">
+                                  Esta senha será usada para acessar o dashboard dos pais
+                                </p>
+                              </div>
+                            )}
                           </div>
                         </div>
 

@@ -17,7 +17,9 @@ import {
   Calendar,
   Phone,
   Mail,
-  Heart
+  Heart,
+  CheckCircle,
+  CreditCard
 } from 'lucide-react';
 import { studentApi, gradeApi, attendanceApi, tuitionApi, occurrenceApi } from '@/lib/api';
 
@@ -395,15 +397,17 @@ export default function StudentDetailsPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="info" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="info">Informações Gerais</TabsTrigger>
-          <TabsTrigger value="medical">Info. Médicas</TabsTrigger>
-          <TabsTrigger value="guardians">Responsáveis</TabsTrigger>
-          <TabsTrigger value="subjects">Matérias</TabsTrigger>
-          <TabsTrigger value="attendance">Frequência</TabsTrigger>
-          <TabsTrigger value="grades">Notas</TabsTrigger>
-          <TabsTrigger value="tuitions">Mensalidades</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+          <TabsList className="min-w-max flex-nowrap w-full md:w-auto">
+            <TabsTrigger value="info" className="whitespace-nowrap">Informações Gerais</TabsTrigger>
+            <TabsTrigger value="medical" className="whitespace-nowrap">Info. Médicas</TabsTrigger>
+            <TabsTrigger value="guardians" className="whitespace-nowrap">Responsáveis</TabsTrigger>
+            <TabsTrigger value="subjects" className="whitespace-nowrap">Matérias</TabsTrigger>
+            <TabsTrigger value="attendance" className="whitespace-nowrap">Frequência</TabsTrigger>
+            <TabsTrigger value="grades" className="whitespace-nowrap">Notas</TabsTrigger>
+            <TabsTrigger value="tuitions" className="whitespace-nowrap">Mensalidades</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="info">
           <Card>
@@ -705,7 +709,8 @@ export default function StudentDetailsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="min-w-full">
                   <thead>
                     <tr className="border-b">
@@ -723,6 +728,23 @@ export default function StudentDetailsPage() {
                   </tbody>
                 </table>
               </div>
+              
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3">
+                {subjects.map((subject) => (
+                  <div key={subject?.id} className="bg-gray-50 rounded-lg p-4 border">
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="h-4 w-4 text-blue-600" />
+                        <span className="font-medium text-gray-900">{subject?.name || 'N/A'}</span>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        <span className="font-medium">Professor:</span> {subject?.teacher?.user?.name || 'N/A'}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -736,7 +758,8 @@ export default function StudentDetailsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="min-w-full">
                   <thead>
                     <tr className="border-b">
@@ -760,6 +783,37 @@ export default function StudentDetailsPage() {
                   </tbody>
                 </table>
               </div>
+              
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3">
+                {attendances.slice(0, 20).map((attendance) => (
+                  <div key={attendance?.id} className="bg-gray-50 rounded-lg p-4 border">
+                    <div className="flex flex-col space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-blue-600" />
+                          <span className="font-medium text-gray-900">
+                            {attendance?.date ? new Date(attendance.date).toLocaleDateString('pt-BR') : 'N/A'}
+                          </span>
+                        </div>
+                        {attendance?.status && getStatusBadge(attendance.status)}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="font-medium">Matéria:</span>
+                          <span>{attendance?.subject?.name || 'N/A'}</span>
+                        </div>
+                        {attendance?.observation && attendance.observation !== '-' && (
+                          <div className="mt-2 p-2 bg-yellow-50 rounded text-xs">
+                            <span className="font-medium text-yellow-800">Observação:</span> {attendance.observation}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
               {(attendances?.length || 0) > 20 && (
                 <p className="text-sm text-gray-500 mt-4">
                   Mostrando as últimas 20 presenças de {attendances?.length || 0} registros
@@ -778,7 +832,8 @@ export default function StudentDetailsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="min-w-full">
                   <thead>
                     <tr className="border-b">
@@ -814,6 +869,53 @@ export default function StudentDetailsPage() {
                   </tbody>
                 </table>
               </div>
+              
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3">
+                {grades.map((grade) => (
+                  <div key={grade?.id} className="bg-gray-50 rounded-lg p-4 border">
+                    <div className="flex flex-col space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-blue-600" />
+                          <span className="font-medium text-gray-900">
+                            {grade?.date ? new Date(grade.date).toLocaleDateString('pt-BR') : 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {(() => {
+                            const gradeValue = parseFloat(grade?.value?.toString()) || 0;
+                            const colorClass = gradeValue >= 7 ? 'text-green-600' : gradeValue >= 5 ? 'text-yellow-600' : 'text-red-600';
+                            const bgColorClass = gradeValue >= 7 ? 'bg-green-100' : gradeValue >= 5 ? 'bg-yellow-100' : 'bg-red-100';
+                            return (
+                              <span className={`font-bold text-lg px-3 py-1 rounded-full ${colorClass} ${bgColorClass}`}>
+                                {grade?.value != null ? gradeValue.toFixed(1) : 'N/A'}
+                              </span>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">Matéria:</span>
+                          <span>{grade?.subject?.name || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">Tipo:</span>
+                          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                            {grade?.grade_type || 'N/A'}
+                          </span>
+                        </div>
+                        {grade?.observation && grade.observation !== '-' && (
+                          <div className="mt-2 p-2 bg-purple-50 rounded text-xs">
+                            <span className="font-medium text-purple-800">Observação:</span> {grade.observation}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -827,7 +929,8 @@ export default function StudentDetailsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="min-w-full">
                   <thead>
                     <tr className="border-b">
@@ -864,6 +967,59 @@ export default function StudentDetailsPage() {
                   </tbody>
                 </table>
               </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3">
+                {tuitions.map((tuition) => (
+                  <div key={tuition.id} className="bg-gray-50 rounded-lg p-4 border">
+                    <div className="flex flex-col space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-blue-600" />
+                          <span className="font-medium text-gray-900">
+                            {new Date(tuition.due_date).toLocaleDateString('pt-BR')}
+                          </span>
+                        </div>
+                        {getStatusBadge(tuition.status)}
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="h-4 w-4 text-green-600" />
+                          <span className="text-lg font-bold text-gray-900">
+                            R$ {formatCurrency(
+                              parseFloat(tuition.amount.toString()) + 
+                              parseFloat((tuition.late_fee || 0).toString()) - 
+                              parseFloat((tuition.discount || 0).toString())
+                            )}
+                          </span>
+                        </div>
+                      </div>
+
+                      {tuition.paid_date && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                          <span>Pago em: {new Date(tuition.paid_date).toLocaleDateString('pt-BR')}</span>
+                        </div>
+                      )}
+
+                      {tuition.payment_method && tuition.payment_method !== '-' && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <CreditCard className="h-4 w-4 text-purple-600" />
+                          <span>Método: {tuition.payment_method}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {tuitions.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <DollarSign className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                  <p>Nenhuma mensalidade encontrada</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
