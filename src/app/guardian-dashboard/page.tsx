@@ -22,6 +22,7 @@ import {
   Eye,
   CreditCard
 } from 'lucide-react';
+import { adminApi, gradeApi, attendanceApi, occurrenceApi } from '@/lib/api';
 
 interface StudentSummary {
   id: number;
@@ -42,37 +43,82 @@ export default function GuardianDashboardPage() {
 
   useEffect(() => {
     loadStudentsData();
-  }, []);
+  }, [user]);
 
   const loadStudentsData = async () => {
     try {
       setLoading(true);
       
-      // Dados simulados - no backend, buscar filhos do responsável
-      const mockStudents: StudentSummary[] = [
-        {
-          id: 1,
-          name: 'Ana Silva',
-          class: '5º Ano A',
-          averageGrade: 8.5,
-          attendancePercentage: 95,
-          recentOccurrences: 0,
-          nextEvents: ['Prova de Matemática - 25/01', 'Reunião de Pais - 30/01']
-        },
-        {
-          id: 2,
-          name: 'Pedro Silva',
-          class: '3º Ano B',
-          averageGrade: 7.2,
-          attendancePercentage: 88,
-          recentOccurrences: 1,
-          nextEvents: ['Apresentação de Ciências - 28/01']
-        }
-      ];
+      if (!user?.guardian?.id) {
+        console.warn('Guardian ID not found');
+        setLoading(false);
+        return;
+      }
       
-      setStudents(mockStudents);
+      // Buscar filhos do responsável
+      const { data: studentsData } = await adminApi.guardians.getStudents(user.guardian.id);
+      
+      // Processar dados de cada filho
+      const studentsWithData: StudentSummary[] = await Promise.all(
+        (studentsData || []).map(async (student: any) => {
+          try {
+            // Buscar notas do aluno
+            const { data: gradesData } = await gradeApi.getAll({ student_id: student.id });
+            const grades = gradesData || [];
+            const averageGrade = grades.length > 0 
+              ? grades.reduce((sum: number, grade: any) => sum + (grade.value || 0), 0) / grades.length
+              : 0;
+            
+            // Buscar frequência do aluno
+            const { data: attendancesData } = await attendanceApi.getAll({ student_id: student.id });
+            const attendances = attendancesData || [];
+            const totalClasses = attendances.length;
+            const presentClasses = attendances.filter((att: any) => att.status === 'present').length;
+            const attendancePercentage = totalClasses > 0 ? (presentClasses / totalClasses) * 100 : 0;
+            
+            // Buscar ocorrências recentes (últimos 30 dias)
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            const { data: occurrencesData } = await occurrenceApi.getAll({ 
+              student_id: student.id,
+              start_date: thirtyDaysAgo.toISOString().split('T')[0]
+            });
+            const recentOccurrences = (occurrencesData || []).length;
+            
+            // Próximos eventos (simulado por enquanto - pode ser implementado com calendário escolar)
+            const nextEvents: string[] = [];
+            // TODO: Implementar busca de eventos do calendário escolar quando disponível
+            
+            return {
+              id: student.id,
+              name: student.name,
+              class: student.schoolClass?.name || student.class || 'Sem turma',
+              averageGrade: Number(averageGrade.toFixed(1)),
+              attendancePercentage: Number(attendancePercentage.toFixed(0)),
+              recentOccurrences,
+              nextEvents
+            };
+          } catch (err) {
+            console.warn('Erro ao carregar dados do aluno', student.id, err);
+            // Retornar dados básicos em caso de erro
+            return {
+              id: student.id,
+              name: student.name,
+              class: student.schoolClass?.name || student.class || 'Sem turma',
+              averageGrade: 0,
+              attendancePercentage: 0,
+              recentOccurrences: 0,
+              nextEvents: []
+            };
+          }
+        })
+      );
+      
+      setStudents(studentsWithData);
     } catch (error) {
       console.error('Erro ao carregar dados dos filhos:', error);
+      // Em caso de erro, deixar lista vazia ao invés de dados mock
+      setStudents([]);
     } finally {
       setLoading(false);
     }

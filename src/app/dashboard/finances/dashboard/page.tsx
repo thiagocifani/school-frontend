@@ -30,6 +30,7 @@ import {
   RefreshCw,
   Save,
   Search,
+  Plus,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { ResponsiveCard, ResponsiveCardContent, ResponsiveCardHeader, ResponsiveCardTitle } from '@/components/ui/responsive-card';
@@ -86,6 +87,9 @@ export default function FinancialDashboardUnified() {
   const [studentOptions, setStudentOptions] = useState<OptionItem[]>([]);
   const [reference, setReference] = useState<{ type: 'Teacher' | 'Student' | null; id: number | null; label?: string }>({ type: null, id: null });
   const [searching, setSearching] = useState(false);
+  
+  // Create form modal
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
   const needsTeacher = transactionType === 'salary';
   const needsStudent = transactionType === 'tuition';
@@ -281,7 +285,9 @@ export default function FinancialDashboardUnified() {
       setObservation('');
       setReference({ type: null, id: null });
       setSearchQuery('');
+      setShowCreateForm(false);
       loadCashFlow();
+      loadTransactions();
     } catch (e: any) {
       toast.error(e?.response?.data?.errors?.join(', ') || e?.response?.data?.error || 'Erro ao criar transação');
     } finally {
@@ -309,7 +315,13 @@ export default function FinancialDashboardUnified() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
         <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--foreground)' }}>Finanças</h1>
-        <div />
+        <Button
+          onClick={() => setShowCreateForm(true)}
+          className="bg-green-600 hover:bg-green-700 text-white"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Nova Transação
+        </Button>
       </div>
 
       {/* Filters minimal */}
@@ -569,6 +581,149 @@ export default function FinancialDashboardUnified() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Create Transaction Modal */}
+      {showCreateForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full max-w-md mx-4 max-h-screen overflow-y-auto">
+            <div className="flex justify-between items-center p-6 border-b">
+              <h2 className="text-xl font-semibold">Nova Transação</h2>
+              <Button variant="ghost" size="sm" onClick={() => setShowCreateForm(false)}>
+                ✕
+              </Button>
+            </div>
+
+            <form onSubmit={(e) => { e.preventDefault(); handleCreate(); }} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Transação</label>
+                <Select value={transactionType} onValueChange={(v: any) => setTransactionType(v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="income">Receita</SelectItem>
+                    <SelectItem value="expense">Despesa</SelectItem>
+                    <SelectItem value="tuition">Mensalidade</SelectItem>
+                    <SelectItem value="salary">Salário</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Valor</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="0,00"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Data de Vencimento</label>
+                <Input
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Descrição</label>
+                <Input
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Descrição da transação"
+                  required
+                />
+              </div>
+
+              {needsTeacher && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Professor/Funcionário</label>
+                  <Input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Digite para buscar professor..."
+                  />
+                  {teacherOptions.length > 0 && (
+                    <div className="mt-2 border rounded-md max-h-32 overflow-y-auto">
+                      {teacherOptions.map((teacher) => (
+                        <button
+                          key={teacher.id}
+                          type="button"
+                          onClick={() => {
+                            setReference({ type: 'Teacher', id: teacher.id, label: teacher.label });
+                            setSearchQuery(teacher.label);
+                            setTeacherOptions([]);
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-gray-100 border-b last:border-b-0"
+                        >
+                          <div className="font-medium">{teacher.label}</div>
+                          {teacher.sublabel && <div className="text-sm text-gray-500">{teacher.sublabel}</div>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {needsStudent && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Aluno</label>
+                  <Input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Digite para buscar aluno..."
+                  />
+                  {studentOptions.length > 0 && (
+                    <div className="mt-2 border rounded-md max-h-32 overflow-y-auto">
+                      {studentOptions.map((student) => (
+                        <button
+                          key={student.id}
+                          type="button"
+                          onClick={() => {
+                            setReference({ type: 'Student', id: student.id, label: student.label });
+                            setSearchQuery(student.label);
+                            setStudentOptions([]);
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-gray-100 border-b last:border-b-0"
+                        >
+                          <div className="font-medium">{student.label}</div>
+                          {student.sublabel && <div className="text-sm text-gray-500">{student.sublabel}</div>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Observação (opcional)</label>
+                <textarea
+                  value={observation}
+                  onChange={(e) => setObservation(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={3}
+                  placeholder="Observações adicionais..."
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button type="button" variant="outline" onClick={() => setShowCreateForm(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={saving} className="bg-green-600 hover:bg-green-700">
+                  {saving ? 'Salvando...' : 'Criar Transação'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

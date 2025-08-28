@@ -7,12 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   ArrowLeft, Edit, Users, Calendar, Clock, BookOpen, 
-  CheckCircle, Play, XCircle, AlertTriangle, UserCheck, UserX, UserMinus, Heart
+  CheckCircle, Play, XCircle, AlertTriangle, UserCheck, UserX, UserMinus, Heart, Plus
 } from 'lucide-react';
 import { diaryApi } from '@/lib/api';
 import { Lesson, LessonAttendance } from '@/types/diary';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import { OccurrenceModal } from '@/components/teacher/occurrence-modal';
 
 export default function LessonDetailsPage() {
   const params = useParams();
@@ -24,6 +25,8 @@ export default function LessonDetailsPage() {
   const [attendances, setAttendances] = useState<LessonAttendance[]>([]);
   const [occurrences, setOccurrences] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showOccurrenceModal, setShowOccurrenceModal] = useState(false);
+  const [students, setStudents] = useState<any[]>([]);
 
   useEffect(() => {
     if (diaryId && lessonId) {
@@ -40,6 +43,10 @@ export default function LessonDetailsPage() {
       
       setLesson(lessonRes.data);
       setAttendances(attendancesRes.data);
+      
+      // Extract students from attendances
+      const studentsData = attendancesRes.data.map(att => att.student);
+      setStudents(studentsData);
       
       // Load occurrences for the lesson date
       if (lessonRes.data?.date) {
@@ -85,6 +92,11 @@ export default function LessonDetailsPage() {
         toast.error('Erro ao cancelar aula');
       }
     }
+  };
+
+  const handleOccurrenceSuccess = () => {
+    toast.success('Ocorrência registrada com sucesso!');
+    loadLessonData(); // Reload to update occurrences
   };
 
   const getStatusColor = (status: string) => {
@@ -350,8 +362,16 @@ export default function LessonDetailsPage() {
 
           {/* Occurrences */}
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-xl font-semibold text-gray-900">Ocorrências do Dia</CardTitle>
+              <Button 
+                onClick={() => setShowOccurrenceModal(true)}
+                variant="outline" 
+                className="border-orange-300 bg-orange-50 hover:bg-orange-100 text-orange-700 hover:text-orange-800"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Ocorrência
+              </Button>
             </CardHeader>
             <CardContent>
               {occurrences && occurrences.length > 0 ? (
@@ -460,6 +480,13 @@ export default function LessonDetailsPage() {
           </Card>
         </div>
       </div>
+
+      <OccurrenceModal
+        isOpen={showOccurrenceModal}
+        onClose={() => setShowOccurrenceModal(false)}
+        students={students}
+        onSuccess={handleOccurrenceSuccess}
+      />
     </div>
   );
 }

@@ -15,6 +15,7 @@ import {
   Search
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { diaryApi } from '@/lib/api';
 
 interface TeacherDiary {
   id: number;
@@ -55,62 +56,84 @@ export default function TeacherDiariesPage() {
     try {
       setLoading(true);
       
-      // Por enquanto, vamos usar dados simulados
-      // No backend, buscar apenas os diários onde o teacher_id = user.teacher.id
-      const mockDiaries: TeacherDiary[] = [
-        {
-          id: 1,
-          subject: { name: 'Matemática', code: 'MAT' },
-          schoolClass: {
-            id: 1,
-            name: 'A',
-            gradeLevel: { name: '5º Ano' }
-          },
-          academicTerm: { name: '1º Bimestre 2024' },
-          studentsCount: 25,
-          lessonsCount: 18,
-          lastLesson: {
-            date: '2024-01-15',
-            topic: 'Frações - Conceitos básicos'
-          }
-        },
-        {
-          id: 2,
-          subject: { name: 'Matemática', code: 'MAT' },
-          schoolClass: {
-            id: 2,
-            name: 'B',
-            gradeLevel: { name: '5º Ano' }
-          },
-          academicTerm: { name: '1º Bimestre 2024' },
-          studentsCount: 23,
-          lessonsCount: 16,
-          lastLesson: {
-            date: '2024-01-14',
-            topic: 'Operações com números decimais'
-          }
-        },
-        {
-          id: 3,
-          subject: { name: 'Português', code: 'POR' },
-          schoolClass: {
-            id: 3,
-            name: 'A',
-            gradeLevel: { name: '4º Ano' }
-          },
-          academicTerm: { name: '1º Bimestre 2024' },
-          studentsCount: 27,
-          lessonsCount: 20,
-          lastLesson: {
-            date: '2024-01-16',
-            topic: 'Verbos - Tempo e modo'
-          }
-        }
-      ];
+      if (!user?.teacher?.id) {
+        console.warn('Teacher ID not found');
+        setLoading(false);
+        return;
+      }
       
-      setDiaries(mockDiaries);
+      // Buscar diários reais do professor
+      const { data: diariesData } = await diaryApi.getAll({ teacher_id: user.teacher.id });
+      
+      // Mapear dados dos diários para o formato esperado
+      const formattedDiaries: TeacherDiary[] = await Promise.all(
+        (diariesData || []).map(async (diary: any) => {
+          try {
+            // Buscar aulas do diário para contar e pegar a última aula
+            const { data: lessonsData } = await diaryApi.getLessons(diary.id);
+            const lessons = lessonsData || [];
+            
+            // Obter última aula
+            const sortedLessons = lessons.sort((a: any, b: any) => 
+              new Date(b.date).getTime() - new Date(a.date).getTime()
+            );
+            const lastLesson = sortedLessons[0];
+            
+            return {
+              id: diary.id,
+              subject: {
+                name: diary.subject?.name || 'Disciplina',
+                code: diary.subject?.code || 'COD'
+              },
+              schoolClass: {
+                id: diary.schoolClass?.id || 0,
+                name: diary.schoolClass?.name || '',
+                gradeLevel: {
+                  name: diary.schoolClass?.gradeLevel?.name || diary.schoolClass?.grade || 'Série'
+                }
+              },
+              academicTerm: {
+                name: diary.academicTerm?.name || 'Período Letivo'
+              },
+              studentsCount: diary.schoolClass?.studentsCount || diary.studentsCount || 0,
+              lessonsCount: lessons.length,
+              lastLesson: lastLesson ? {
+                date: lastLesson.date,
+                topic: lastLesson.topic || lastLesson.content || 'Aula ministrada'
+              } : undefined
+            };
+          } catch (err) {
+            console.warn('Erro ao processar diário', diary.id, err);
+            // Retornar dados básicos mesmo se houver erro ao buscar aulas
+            return {
+              id: diary.id,
+              subject: {
+                name: diary.subject?.name || 'Disciplina',
+                code: diary.subject?.code || 'COD'
+              },
+              schoolClass: {
+                id: diary.schoolClass?.id || 0,
+                name: diary.schoolClass?.name || '',
+                gradeLevel: {
+                  name: diary.schoolClass?.gradeLevel?.name || diary.schoolClass?.grade || 'Série'
+                }
+              },
+              academicTerm: {
+                name: diary.academicTerm?.name || 'Período Letivo'
+              },
+              studentsCount: diary.schoolClass?.studentsCount || diary.studentsCount || 0,
+              lessonsCount: 0,
+              lastLesson: undefined
+            };
+          }
+        })
+      );
+      
+      setDiaries(formattedDiaries);
     } catch (error) {
       console.error('Erro ao carregar diários:', error);
+      // Em caso de erro, deixar lista vazia ao invés de dados mock
+      setDiaries([]);
     } finally {
       setLoading(false);
     }

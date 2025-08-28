@@ -13,7 +13,7 @@ import {
   Clock,
   TrendingUp
 } from 'lucide-react';
-import { teacherApi, diaryApi } from '@/lib/api';
+import { teacherApi, diaryApi, gradeApi, occurrenceApi } from '@/lib/api';
 
 interface TeacherStats {
   totalClasses: number;
@@ -46,45 +46,103 @@ export default function TeacherDashboard() {
     try {
       setLoading(true);
       
-      // Por enquanto, vamos usar dados simulados
-      // Quando implementar no backend, buscar dados reais do professor
-      setStats({
-        totalClasses: 3,
-        totalStudents: 75,
-        todayLessons: 4,
-        pendingGrades: 12,
-        recentOccurrences: 2,
-        upcomingLessons: [
-          {
-            id: 1,
-            subject: 'Matemática',
-            class: '5º Ano A',
-            time: '08:00',
-            topic: 'Frações'
-          },
-          {
-            id: 2,
-            subject: 'Português',
-            class: '4º Ano B', 
-            time: '10:00',
-            topic: 'Verbos'
+      if (!user?.teacher?.id) {
+        console.warn('Teacher ID not found');
+        setLoading(false);
+        return;
+      }
+      
+      // Buscar dados reais do professor
+      const { data: teacherData } = await teacherApi.getById(user.teacher.id);
+      
+      // Calcular estatísticas baseadas nos dados reais
+      const totalClasses = (teacherData.classes || []).length;
+      const totalStudents = (teacherData.classes || []).reduce(
+        (sum: number, cls: any) => sum + (cls.students_count || 0), 0
+      );
+      
+      // Buscar diários do professor
+      const { data: diariesData } = await diaryApi.getAll({ teacher_id: user.teacher.id });
+      
+      // Buscar aulas de hoje
+      const today = new Date().toISOString().split('T')[0];
+      const upcomingLessons: any[] = [];
+      
+      for (const diary of diariesData || []) {
+        try {
+          const { data: lessonsData } = await diaryApi.getLessons(diary.id, { date: today });
+          for (const lesson of lessonsData || []) {
+            upcomingLessons.push({
+              id: lesson.id,
+              subject: diary.subject?.name || 'Disciplina',
+              class: `${diary.schoolClass?.gradeLevel?.name || ''} ${diary.schoolClass?.name || ''}`.trim(),
+              time: lesson.time || '08:00',
+              topic: lesson.topic || 'Aula do dia'
+            });
           }
-        ],
-        recentActivities: [
-          {
-            id: 1,
+        } catch (err) {
+          console.warn('Erro ao carregar aulas do diário', diary.id);
+        }
+      }
+      
+      // Buscar atividades recentes (últimas 7 dias)
+      const recentActivities: any[] = [];
+      
+      try {
+        // Buscar notas recentes
+        const { data: gradesData } = await gradeApi.getAll({ 
+          teacher_id: user.teacher.id,
+          limit: 5
+        });
+        
+        (gradesData || []).forEach((grade: any) => {
+          recentActivities.push({
+            id: `grade_${grade.id}`,
             type: 'grade',
-            description: 'Notas lançadas para Matemática - 5º Ano A',
-            time: '2 horas atrás'
-          },
-          {
-            id: 2,
+            description: `Nota lançada para ${grade.student?.name || 'aluno'} - ${grade.subject?.name || 'disciplina'}`,
+            time: grade.created_at ? new Date(grade.created_at).toLocaleDateString('pt-BR') : 'Recente'
+          });
+        });
+      } catch (err) {
+        console.warn('Erro ao carregar notas recentes');
+      }
+      
+      try {
+        // Buscar ocorrências recentes
+        const { data: occurrencesData } = await occurrenceApi.getAll({ 
+          teacher_id: user.teacher.id,
+          limit: 5
+        });
+        
+        (occurrencesData || []).forEach((occurrence: any) => {
+          recentActivities.push({
+            id: `occurrence_${occurrence.id}`,
             type: 'occurrence',
-            description: 'Ocorrência registrada - João Silva',
-            time: '1 dia atrás'
-          }
-        ]
+            description: `Ocorrência registrada - ${occurrence.student?.name || 'aluno'}`,
+            time: occurrence.date ? new Date(occurrence.date).toLocaleDateString('pt-BR') : 'Recente'
+          });
+        });
+      } catch (err) {
+        console.warn('Erro ao carregar ocorrências recentes');
+      }
+      
+      // Ordenar atividades por data (mais recentes primeiro)
+      recentActivities.sort((a, b) => {
+        const dateA = new Date(a.time);
+        const dateB = new Date(b.time);
+        return dateB.getTime() - dateA.getTime();
       });
+      
+      setStats({
+        totalClasses,
+        totalStudents,
+        todayLessons: upcomingLessons.length,
+        pendingGrades: 0, // Será calculado baseado em aulas sem notas
+        recentOccurrences: recentActivities.filter(a => a.type === 'occurrence').length,
+        upcomingLessons: upcomingLessons.slice(0, 5),
+        recentActivities: recentActivities.slice(0, 10)
+      });
+      
     } catch (error) {
       console.error('Erro ao carregar estatísticas:', error);
     } finally {
